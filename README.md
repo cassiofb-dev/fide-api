@@ -39,8 +39,6 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-[![Deploy](https://button.deta.dev/1/svg)](https://go.deta.dev/deploy?repo=https://github.com/cassiofb-dev/fide-api)
-
 ## Credits
 
 This project uses git, python (3.9.14) and asdf.
