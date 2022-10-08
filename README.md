@@ -43,7 +43,7 @@ uvicorn main:app --reload
 
 ## Credits
 
-This project uses git, python (3.10.7) and asdf.
+This project uses git, python (3.9.14) and asdf.
 
 The following python dependecies were used:
 ```txt
