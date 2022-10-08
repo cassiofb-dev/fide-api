@@ -7,6 +7,12 @@ from scraper import fide_scraper
 
 app = FastAPI(default_response_class=ORJSONResponse)
 
+@app.get("/")
+def home():
+  return {
+    "Hello World!": "For help go to /docs endpoint."
+}
+
 @app.get("/top_players/")
 async def top_players(limit: int = 100, history: bool = False):
   response = fide_scraper.top_players(limit=limit, history=history)
