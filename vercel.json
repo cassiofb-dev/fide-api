@@ -1,5 +1,5 @@
 {
-	"version": 1,
+	"version": 2,
 	"public": false,
 	"builds": [{ "src": "main.py", "use": "@vercel/python" }],
 	"routes": [
