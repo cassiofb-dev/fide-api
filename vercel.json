@@ -4,6 +4,9 @@
 	"builds": [{ "src": "src/api.py", "use": "@vercel/python" }],
 	"routes": [
 		{ "src": "/", "dest": "src/api.py" },
+		{ "src": "/top_players", "dest": "src/api.py" },
+		{ "src": "/player_info", "dest": "src/api.py" },
+		{ "src": "/player_history", "dest": "src/api.py" },
 		{ "src": "/docs", "dest": "src/api.py" },
 		{ "src": "/openapi.json", "dest": "src/api.py" }
 	]
