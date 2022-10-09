@@ -1,7 +1,6 @@
-import pandas as pd
 from bs4 import BeautifulSoup
 
-def top_players_to_dataframe(html_doc: str):
+def get_top_players(html_doc):
   soup = BeautifulSoup(html_doc, "html.parser")
 
   table_selector = "#main-col > table:nth-child(2) > tr:nth-child(2) > td > table"
@@ -12,7 +11,7 @@ def top_players_to_dataframe(html_doc: str):
 
   rows.pop(0)
 
-  raw_table = []
+  top_players = []
 
   for row in rows:
     raw_row = []
@@ -26,20 +25,15 @@ def top_players_to_dataframe(html_doc: str):
 
       if player_url: raw_row.append(player_url["href"].split("=")[1])
 
-    raw_table.append(raw_row)
+    top_players.append({
+      "rank": raw_row[0],
+      "name": raw_row[1],
+      "fide_id": raw_row[2],
+      "title": raw_row[3],
+      "country": raw_row[4],
+      "rating": raw_row[5],
+      "games": raw_row[6],
+      "birth_year": raw_row[7],
+    })
 
-  top_players_dataframe = pd.DataFrame(
-    raw_table,
-    columns=[
-      "rank",
-      "name",
-      "fide_id",
-      "title",
-      "country",
-      "rating",
-      "games",
-      "birth_year",
-    ],
-  )
-
-  return top_players_dataframe
+  return top_players
