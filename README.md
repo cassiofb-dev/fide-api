@@ -20,9 +20,13 @@ Working with FIDE oficial data is not simple, mainly because they don't have an 
 
 ## Features
 
+Check it on:
+[https://fide-api.vercel.app/](https://fide-api.vercel.app/)
+
 - Get top players list
 - Get player info
 - Get player history
+- Docs on ``/docs``
 
 ## Usage
 
