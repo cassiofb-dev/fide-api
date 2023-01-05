@@ -58,29 +58,29 @@ This project uses git, python (3.10.7) and asdf.
 
 The following python dependecies were used:
 ```txt
-anyio==3.6.1
+anyio==3.6.2
 beautifulsoup4==4.11.1
-certifi==2022.9.24
+certifi==2022.12.7
 charset-normalizer==2.1.1
 click==8.1.3
-fastapi==0.85.0
+fastapi==0.88.0
 h11==0.14.0
 httptools==0.5.0
 idna==3.4
-orjson==3.8.0
-pydantic==1.10.2
+orjson==3.8.4
+pydantic==1.10.4
 python-dotenv==0.21.0
 PyYAML==6.0
 requests==2.28.1
 sniffio==1.3.0
 soupsieve==2.3.2.post1
-starlette==0.20.4
+starlette==0.22.0
 typing_extensions==4.4.0
-urllib3==1.26.12
-uvicorn==0.18.3
+urllib3==1.26.13
+uvicorn==0.20.0
 uvloop==0.17.0
-watchfiles==0.17.0
-websockets==10.3
+watchfiles==0.18.1
+websockets==10.4
 ```
 
 ## License
