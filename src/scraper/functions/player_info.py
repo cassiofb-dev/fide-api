@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 def get_player_info(html_doc: str):
   soup = BeautifulSoup(html_doc, "html.parser")
@@ -19,18 +19,33 @@ def get_player_info(html_doc: str):
   }
 
   player_info = {
-    "fide_id": player_info_raw["fide_id"].get_text().strip() if player_info_raw["fide_id"] else None,
-    "fide_title": player_info_raw["fide_title"].get_text().strip() if player_info_raw["fide_title"] else None,
-    "federation": player_info_raw["federation"].get_text().strip() if player_info_raw["federation"] else None,
-    "birth_year": int(player_info_raw["birth_year"].get_text().strip() if player_info_raw["birth_year"] else None or 0),
-    "sex": player_info_raw["sex"].get_text().strip() if player_info_raw["sex"] else None,
-    "name": player_info_raw["name"].get_text().strip() if player_info_raw["name"] else None,
-    "world_rank_all": int(player_info_raw["world_rank_all"].get_text().strip() if player_info_raw["world_rank_all"] else None or 0),
-    "world_rank_active": int(player_info_raw["world_rank_active"].get_text().strip() if player_info_raw["world_rank_active"] else None or 0),
-    "continental_rank_all": int(player_info_raw["continental_rank_all"].get_text().strip() if player_info_raw["continental_rank_all"] else None or 0),
-    "continental_rank_active": int(player_info_raw["continental_rank_active"].get_text().strip() if player_info_raw["continental_rank_active"] else None or 0),
-    "national_rank_all": int(player_info_raw["national_rank_all"].get_text().strip() if player_info_raw["national_rank_all"] else None or 0),
-    "national_rank_active": int(player_info_raw["national_rank_active"].get_text().strip() if player_info_raw["national_rank_active"] else None or 0),
+    "fide_id": safely_get_string(player_info_raw["fide_id"]),
+    "fide_title": safely_get_string(player_info_raw["fide_title"]),
+    "federation": safely_get_string(player_info_raw["federation"]),
+    "birth_year": safely_get_int(player_info_raw["birth_year"]),
+    "sex": safely_get_string(player_info_raw["sex"]),
+    "name": safely_get_string(player_info_raw["name"]),
+    "world_rank_all": safely_get_int(player_info_raw["world_rank_all"]),
+    "world_rank_active": safely_get_int(player_info_raw["world_rank_active"]),
+    "continental_rank_all": safely_get_int(player_info_raw["continental_rank_all"]),
+    "continental_rank_active": safely_get_int(player_info_raw["continental_rank_active"]),
+    "national_rank_all": safely_get_int(player_info_raw["national_rank_all"]),
+    "national_rank_active": safely_get_int(player_info_raw["national_rank_active"]),
   }
 
   return player_info
+
+def safely_get_string(tag: Tag):
+  if tag is None:
+    return None
+
+  return tag.get_text().strip()
+
+def safely_get_int(tag: Tag):
+  if tag is None:
+    return None
+  
+  if not tag.get_text().strip().isdigit():
+    return None
+
+  return int(tag.get_text().strip())
