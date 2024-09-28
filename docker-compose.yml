@@ -1,0 +1,10 @@
+services:
+  fide-api:
+    network_mode: "host"
+    container_name: fide-api
+    image: python:3.12-alpine3.20
+    working_dir: "/fide-api"
+    stop_grace_period: 1s
+    command: sh -c "pip install -r requirements.txt && uvicorn src.api:app --reload"
+    volumes:
+      - ./:/fide-api

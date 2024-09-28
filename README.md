@@ -12,7 +12,7 @@
   <a href="#license">License</a>
 </p>
 
-![example](screenshot.png)
+![screenshot](screenshot.jpg)
 
 ## About
 
@@ -21,25 +21,34 @@ Working with FIDE oficial data is not simple, mainly because they don't have an 
 ## Features
 
 Check it on:
-[https://fide-api.vercel.app/](https://fide-api.vercel.app/)
+[https://fide-api.vercel.app/docs](https://fide-api.vercel.app/docs)
 
 - Get top players list
 - Get player info
 - Get player history
-- Docs on ``/docs``
 
 ## Usage
 
-You will need git and asdf installed, from your terminal:
+### Docker (recommended)
+
+You will need docker and docker-compose installed, from your terminal:
 
 ```sh
 git clone https://github.com/cassiofb-dev/fide-api
 
 cd fide-api
 
-asdf install python 3.10.7
+docker compose up -d
+```
 
-asdf local python 3.10.7
+### Native
+
+You will need git and python installed, from your terminal:
+
+```sh
+git clone https://github.com/cassiofb-dev/fide-api
+
+cd fide-api
 
 python -m venv venv
 
@@ -54,33 +63,29 @@ To see the docs go to ``localhost:8000/docs``
 
 ## Credits
 
-This project uses git, python (3.10.7) and asdf.
+This project uses git, python.
 
 The following python dependecies were used:
 ```txt
-anyio==3.6.2
-beautifulsoup4==4.11.1
-certifi==2022.12.7
-charset-normalizer==2.1.1
-click==8.1.3
-fastapi==0.88.0
+annotated-types==0.7.0
+anyio==4.6.0
+beautifulsoup4==4.12.3
+certifi==2024.8.30
+charset-normalizer==3.3.2
+click==8.1.7
+fastapi==0.115.0
 h11==0.14.0
-httptools==0.5.0
-idna==3.4
-orjson==3.8.4
-pydantic==1.10.4
-python-dotenv==0.21.0
-PyYAML==6.0
-requests==2.28.1
-sniffio==1.3.0
-soupsieve==2.3.2.post1
-starlette==0.22.0
-typing_extensions==4.4.0
-urllib3==1.26.13
-uvicorn==0.20.0
-uvloop==0.17.0
-watchfiles==0.18.1
-websockets==10.4
+idna==3.10
+orjson==3.10.7
+pydantic==2.9.2
+pydantic_core==2.23.4
+requests==2.32.3
+sniffio==1.3.1
+soupsieve==2.6
+starlette==0.38.6
+typing_extensions==4.12.2
+urllib3==2.2.3
+uvicorn==0.31.0
 ```
 
 ## License
@@ -89,6 +94,6 @@ MIT
 
 ---
 
-> [Website](https://cassiofernando.netlify.app/) &nbsp;&middot;&nbsp;
+> [Website](https://cassiofernando.com) &nbsp;&middot;&nbsp;
 > GitHub [@cassiofb-dev](https://github.com/cassiofb-dev) &nbsp;&middot;&nbsp;
 > Twitter [@cassiofb_dev](https://twitter.com/cassiofb_dev)
