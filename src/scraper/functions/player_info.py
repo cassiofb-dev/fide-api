@@ -3,19 +3,23 @@ from bs4 import BeautifulSoup, Tag
 def get_player_info(html_doc: str):
   soup = BeautifulSoup(html_doc, "html.parser")
 
+  print(html_doc)
+  with open("/home/hadron43/projects/fide-api/src/scraper/functions/player_info.html", "w") as file:
+    file.write(html_doc)
+
   player_info_raw = {
-    "fide_id": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-top.col-lg-12 > div > div.col-lg-9.profile-top__right > div > div.col-lg-12.profile-top-info > div:nth-child(1) > div:nth-child(3) > div.profile-top-info__block__row__data"),
-    "fide_title": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-top.col-lg-12 > div > div.col-lg-9.profile-top__right > div > div.col-lg-12.profile-top-info > div:nth-child(2) > div:nth-child(3) > div.profile-top-info__block__row__data"),
-    "federation": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-top.col-lg-12 > div > div.col-lg-9.profile-top__right > div > div.col-lg-12.profile-top-info > div:nth-child(1) > div:nth-child(2) > div.profile-top-info__block__row__data"),
-    "birth_year": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-top.col-lg-12 > div > div.col-lg-9.profile-top__right > div > div.col-lg-12.profile-top-info > div:nth-child(2) > div:nth-child(1) > div.profile-top-info__block__row__data"),
-    "sex": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-top.col-lg-12 > div > div.col-lg-9.profile-top__right > div > div.col-lg-12.profile-top-info > div:nth-child(2) > div:nth-child(2) > div.profile-top-info__block__row__data"),
-    "name": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-top.col-lg-12 > div > div.col-lg-9.profile-top__right > div > div.col-lg-8.profile-top-title"),
-    "world_rank_all": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-bottom.col-lg-12 > div.profile-tab-containers > div.profile-tab-container.profile-tab-container_active > div:nth-child(2) > div:nth-child(1) > table > tbody > tr:nth-child(1) > td:nth-child(2)"),
-    "world_rank_active": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-bottom.col-lg-12 > div.profile-tab-containers > div.profile-tab-container.profile-tab-container_active > div:nth-child(2) > div:nth-child(1) > table > tbody > tr:nth-child(2) > td:nth-child(2)"),
-    "continental_rank_all": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-bottom.col-lg-12 > div.profile-tab-containers > div.profile-tab-container.profile-tab-container_active > div:nth-child(2) > div:nth-child(3) > table > tbody > tr:nth-child(1) > td:nth-child(2)"),
-    "continental_rank_active": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-bottom.col-lg-12 > div.profile-tab-containers > div.profile-tab-container.profile-tab-container_active > div:nth-child(2) > div:nth-child(3) > table > tbody > tr:nth-child(2) > td:nth-child(2)"),
-    "national_rank_all": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-bottom.col-lg-12 > div.profile-tab-containers > div.profile-tab-container.profile-tab-container_active > div:nth-child(2) > div:nth-child(2) > table > tbody > tr:nth-child(1) > td:nth-child(2)"),
-    "national_rank_active": soup.select_one("body > section.container.section-profile > div.row.no-gutters > div.profile-bottom.col-lg-12 > div.profile-tab-containers > div.profile-tab-container.profile-tab-container_active > div:nth-child(2) > div:nth-child(2) > table > tbody > tr:nth-child(2) > td:nth-child(2)"),
+    "fide_id": soup.select_one(".profile-info-id"),
+    "fide_title": soup.select_one(".profile-info-title "),
+    "federation": soup.select_one(".profile-info-country"),
+    "birth_year": soup.select_one(".profile-info-byear"),
+    "sex": soup.select_one(".profile-info-sex "),
+    "name": soup.select_one(".player-title"),
+    "world_rank_active": soup.select_one(".profile-rank-block:nth-of-type(1) .profile-rank-row:nth-of-type(1) p"),
+    "world_rank_all": soup.select_one(".profile-rank-block:nth-of-type(1) .profile-rank-row:nth-of-type(2) p"),
+    "continental_rank_all": soup.select_one(".profile-rank-block:nth-of-type(3) .profile-rank-row:nth-of-type(2) p"),
+    "continental_rank_active": soup.select_one(".profile-rank-block:nth-of-type(3) .profile-rank-row:nth-of-type(1) p"),
+    "national_rank_all": soup.select_one(".profile-rank-block:nth-of-type(2) .profile-rank-row:nth-of-type(2) p"),
+    "national_rank_active": soup.select_one(".profile-rank-block:nth-of-type(2) .profile-rank-row:nth-of-type(1) p"),
   }
 
   player_info = {
