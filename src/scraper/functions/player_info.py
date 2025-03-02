@@ -3,10 +3,6 @@ from bs4 import BeautifulSoup, Tag
 def get_player_info(html_doc: str):
   soup = BeautifulSoup(html_doc, "html.parser")
 
-  print(html_doc)
-  with open("/home/hadron43/projects/fide-api/src/scraper/functions/player_info.html", "w") as file:
-    file.write(html_doc)
-
   player_info_raw = {
     "fide_id": soup.select_one(".profile-info-id"),
     "fide_title": soup.select_one(".profile-info-title "),
