@@ -2,7 +2,7 @@ import requests
 import src.scraper.functions as scraper
 
 def get_top_players(limit: int = 100, history: bool = False) -> list[dict]:
-  fide_top_players_page = requests.get("https://ratings.fide.com/top.phtml")
+  fide_top_players_page = requests.get("https://ratings.fide.com/a_top.php?list=open")
 
   html_doc = fide_top_players_page.text
 
