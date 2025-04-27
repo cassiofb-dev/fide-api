@@ -1,7 +1,7 @@
 import requests
 
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.scraper import fide_scraper
@@ -18,9 +18,7 @@ app.add_middleware(
 
 @app.get("/")
 def home():
-  return {
-    "Hello World!": "For help go to /docs endpoint."
-}
+  return RedirectResponse('/docs')
 
 @app.get("/top_players/")
 async def top_players(limit: int = 100, history: bool = False):
