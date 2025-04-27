@@ -5,7 +5,7 @@ from src.scraper.functions.utils import fide_date_to_numeric_string
 def get_player_history(html_doc: str):
   soup = BeautifulSoup(html_doc, "html.parser")
 
-  table_selector = "body > section.container.section-profile > div.row.no-gutters > div.profile-bottom.col-lg-12 > div.profile-tab-containers > div:nth-child(3) > div > div.col-lg-12.profile-tableCont > table > tbody"
+  table_selector = ".profile-table_calc > tbody:nth-child(2)"
 
   table = soup.select_one(table_selector)
 

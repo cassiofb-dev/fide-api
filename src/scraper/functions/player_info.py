@@ -44,7 +44,7 @@ def safely_get_string(tag: Tag):
 def safely_get_int(tag: Tag):
   if tag is None:
     return None
-  
+
   if not tag.get_text().strip().isdigit():
     return None
 
