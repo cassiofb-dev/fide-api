@@ -16,6 +16,9 @@ def get_player_info(html_doc: str):
     "continental_rank_active": soup.select_one(".profile-rank-block:nth-of-type(3) .profile-rank-row:nth-of-type(1) p"),
     "national_rank_all": soup.select_one(".profile-rank-block:nth-of-type(2) .profile-rank-row:nth-of-type(2) p"),
     "national_rank_active": soup.select_one(".profile-rank-block:nth-of-type(2) .profile-rank-row:nth-of-type(1) p"),
+    "classical_rating": soup.select_one(".profile-standart > p:nth-child(2)"),
+    "rapid_rating": soup.select_one(".profile-rapid > p:nth-child(2)"),
+    "blitz_rating": soup.select_one(".profile-blitz > p:nth-child(2)"),
   }
 
   player_info = {
@@ -31,6 +34,9 @@ def get_player_info(html_doc: str):
     "continental_rank_active": safely_get_int(player_info_raw["continental_rank_active"]),
     "national_rank_all": safely_get_int(player_info_raw["national_rank_all"]),
     "national_rank_active": safely_get_int(player_info_raw["national_rank_active"]),
+    "classical_rating": safely_get_int(player_info_raw["classical_rating"]),
+    "rapid_rating": safely_get_int(player_info_raw["rapid_rating"]),
+    "blitz_rating": safely_get_int(player_info_raw["blitz_rating"]),
   }
 
   return player_info
