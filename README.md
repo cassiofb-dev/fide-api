@@ -16,7 +16,9 @@
 
 ## About
 
-Working with FIDE oficial data is not simple, mainly because they don't have an API. That's the reason I made a simple API with FastAPI to scrape the data from their own website and provide it as JSON over HTTP requests.
+Working with FIDE official data is not simple, mainly because they don't have an API. That's the reason I made a simple API with FastAPI to scrape the data from their own website and provide it as JSON over HTTP requests.
+
+A Redis cache is implemented to provide faster lookups for common use cases.
 
 ## Features
 

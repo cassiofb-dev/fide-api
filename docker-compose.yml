@@ -8,3 +8,22 @@ services:
     command: sh -c "pip install -r requirements.txt && uvicorn src.api:app --reload"
     volumes:
       - ./:/fide-api
+    environment:
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - CACHE_EXPIRY=3600
+    depends_on:
+      - redis
+      
+  redis:
+    image: redis:7-alpine
+    container_name: fide-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+volumes:
+  redis-data:
