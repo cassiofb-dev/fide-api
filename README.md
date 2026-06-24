@@ -1,3 +1,7 @@
+# THIS PROJECT IS DEPRECATED, CHECK PINNED ISSUE
+
+---
+
 <h1 align="center">
   FIDE API
 </h1>
