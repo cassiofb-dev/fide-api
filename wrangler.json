@@ -1,0 +1,15 @@
+{
+  "name": "fide-api",
+  "compatibility_date": "2026-07-02",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "pages_build_output_dir": ".next",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fide-db",
+      "database_id": "fide-db-id"
+    }
+  ]
+}

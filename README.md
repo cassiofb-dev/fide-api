@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FIDE API Scraper & Analytics Dashboard
+
+A premium web application and scraper that fetches, caches, and visualizes chess player profiles, rating history, and match statistics directly from the official FIDE website. Built with Next.js, Prisma, and Cloudflare D1.
+
+## Features
+
+- **Rankings Cache & Viewer**: Browse FIDE Top 100 lists for multiple formats (Standard, Rapid, Blitz) across divisions (Open, Women, Juniors, Girls) with automatic SQLite/D1 database caching.
+- **Player Lookup**: Query any player directly by FIDE ID (e.g. `1503014` for GM Magnus Carlsen) to retrieve and cache their profile.
+- **Rating History Chart**: Interactive, animated custom SVG area charts mapping the player's historical standard, rapid, and blitz ratings over time.
+- **Game Statistics Visualizer**: Visually inspect the player's win/draw/loss distribution for playing with White and Black pieces.
+- **Real-Time Database Sync**: Force-refresh rankings and profile statistics directly from the live FIDE website.
+
+## Tech Stack
+
+- **Framework**: Next.js 15+ (App Router)
+- **Styling**: Tailwind CSS v4 (vanilla aesthetic modern dark design)
+- **Database**: Cloudflare D1 (with local SQLite fallback for development)
+- **ORM**: Prisma 7 (using modern pluggable Driver Adapters: `@prisma/adapter-better-sqlite3` and `@prisma/adapter-d1`)
+- **Scraper**: Cheerio (for robust DOM parsing and scraping)
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Dependencies
+
+Install project workspace dependencies using `pnpm`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Database Synchronization
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Prisma 7 connection URLs are configured inside `prisma.config.ts`. Set up the local SQLite database file (`dev.db`) and synchronize your database schema:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx prisma db push
+```
 
-## Learn More
+### 3. Run Development Server
 
-To learn more about Next.js, take a look at the following resources:
+Launch the Next.js development server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000) on your browser to view the dashboard.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Cloudflare Pages & D1 Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is configured to run on Cloudflare Pages using Cloudflare D1 as the production database.
+
+### 1. Create a D1 Database
+Create your remote D1 database using Wrangler:
+```bash
+npx wrangler d1 create fide-db
+```
+Copy the `database_id` from the output and update it in your [wrangler.json](file:///home/cassio/Documents/Code/fide-api/wrangler.json).
+
+### 2. Initialize Database Schema
+Generate the SQL schema script from your Prisma schema:
+```bash
+npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > migration.sql
+```
+Apply the migration schema to your remote D1 database:
+```bash
+npx wrangler d1 execute fide-db --remote --file=./migration.sql
+```
+
+### 3. Build & Deploy
+Compile and deploy the application to Cloudflare Pages:
+```bash
+npx @cloudflare/next-on-pages
+npx wrangler pages deploy .open-next
+```
+
+---
+
+## License
+
+MIT License • Copyright (c) 2026 cassiofernando
+

@@ -1,13 +1,92 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "sqlite"
+}
+
+model Player {
+  id                  Int           @id
+  name                String
+  federation          String?
+  birthYear           Int?
+  gender              String?
+  title               String?
+  stdRating           Int?
+  rapidRating         Int?
+  blitzRating         Int?
+  worldRankActive     Int?
+  worldRankAll        Int?
+  nationalRankActive  Int?
+  nationalRankAll     Int?
+  continentRankActive Int?
+  continentRankAll    Int?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  charts              PlayerChart[]
+  stats               PlayerStats?
+}
+
+model PlayerChart {
+  id          String   @id @default(uuid())
+  playerId    Int
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  period      String   // e.g. "2003-Apr"
+  rating      Int?
+  games       Int?
+  rapidRating Int?
+  rapidGames  Int?
+  blitzRating Int?
+  blitzGames  Int?
+
+  @@unique([playerId, period])
+}
+
+model PlayerStats {
+  playerId          Int    @id
+  player            Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  whiteTotal        Int
+  whiteWinNum       Int
+  whiteDrawNum      Int
+  blackTotal        Int
+  blackWinNum       Int
+  blackDrawNum      Int
+  whiteTotalStd     Int
+  whiteWinNumStd    Int
+  whiteDrawNumStd   Int
+  blackTotalStd     Int
+  blackWinNumStd    Int
+  blackDrawNumStd   Int
+  whiteTotalRpd     Int
+  whiteWinNumRpd    Int
+  whiteDrawNumRpd   Int
+  blackTotalRpd     Int
+  blackWinNumRpd    Int
+  blackDrawNumRpd   Int
+  whiteTotalBlz     Int
+  whiteWinNumBlz    Int
+  whiteDrawNumBlz   Int
+  blackTotalBlz     Int
+  blackWinNumBlz    Int
+  blackDrawNumBlz   Int
+}
+
+model TopList {
+  id        String   @id @default(uuid())
+  listType  String   // e.g. "open", "women", "juniors_rapid"
+  rank      Int
+  fideId    Int
+  name      String
+  fed       String?
+  rating    Int
+  bYear     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listType, rank])
 }
