@@ -1,103 +1,158 @@
-# THIS PROJECT IS DEPRECATED, CHECK PINNED ISSUE
+# FIDE API Scraper & Viewer
+
+A modern Next.js application designed to scrape and display top chess players' ratings and profile details from the official FIDE website, using Cloudflare Pages, Cloudflare D1 (SQLite), and Prisma ORM.
+
+## Tech Stack
+- **Framework**: Next.js 16 (App Router)
+- **Deployment & Hosting**: Cloudflare Pages
+- **Database**: Cloudflare D1
+- **ORM**: Prisma 7 (with `@prisma/adapter-d1` and `prisma.config.ts`)
+- **Package Manager**: pnpm
 
 ---
 
-<h1 align="center">
-  FIDE API
-</h1>
+## Getting Started
 
-<h4 align="center">Python FIDE scraper and HTTP API</h4>
+Follow the steps below to configure your local development environment, set up the local D1 state, and run/deploy the project.
 
-<p align="center">
-  <a href="#about">About</a> •
-  <a href="#features">Features</a> •
-  <a href="#usage">Usage</a> •
-  <a href="#credits">Credits</a> •
-  <a href="#license">License</a>
-</p>
+### 1. Prerequisites
+Make sure you have Node.js, `pnpm` installed, and a Cloudflare account setup.
 
-![screenshot](screenshot.jpg)
-
-## About
-
-Working with FIDE oficial data is not simple, mainly because they don't have an API. That's the reason I made a simple API with FastAPI to scrape the data from their own website and provide it as JSON over HTTP requests.
-
-## Features
-
-Check it on:
-[https://fide-api.vercel.app/docs](https://fide-api.vercel.app/docs)
-
-- Get top players list
-- Get player info
-- Get player history
-
-## Usage
-
-### Docker (recommended)
-
-You will need docker and docker-compose installed, from your terminal:
-
-```sh
-git clone https://github.com/cassiofb-dev/fide-api
-
-cd fide-api
-
-docker compose up -d
+Install dependencies:
+```bash
+pnpm install
 ```
 
-### Native
+### 2. Configure Local D1 State & Migrations
+Prisma CLI in version 7+ utilizes `prisma.config.ts` to manage datasource URLs instead of loading them from `schema.prisma`. 
 
-You will need git and python installed, from your terminal:
+1. **Generate type definitions** for Cloudflare bindings:
+   ```bash
+   pnpm cf-typegen
+   ```
+2. **Apply migrations** to your local D1 database:
+   ```bash
+   pnpm exec wrangler d1 migrations apply fide-db --local
+   ```
+   *(Confirm with `y` when prompted)*
 
-```sh
-git clone https://github.com/cassiofb-dev/fide-api
-
-cd fide-api
-
-python -m venv venv
-
-source venv/bin/activate
-
-pip install -r requirements.txt
-
-uvicorn src.api:app --reload
-```
-
-To see the docs go to ``localhost:8000/docs``
-
-## Credits
-
-This project uses git, python.
-
-The following python dependecies were used:
-```txt
-annotated-types==0.7.0
-anyio==4.6.0
-beautifulsoup4==4.12.3
-certifi==2024.8.30
-charset-normalizer==3.3.2
-click==8.1.7
-fastapi==0.115.0
-h11==0.14.0
-idna==3.10
-orjson==3.10.7
-pydantic==2.9.2
-pydantic_core==2.23.4
-requests==2.32.3
-sniffio==1.3.1
-soupsieve==2.6
-starlette==0.38.6
-typing_extensions==4.12.2
-urllib3==2.2.3
-uvicorn==0.31.0
-```
-
-## License
-
-MIT
+This initializes your local SQLite database structure in `.wrangler/state`.
 
 ---
 
-> [Website](https://cassiofernando.com) &nbsp;&middot;&nbsp;
-> GitHub [@cassiofb-dev](https://github.com/cassiofb-dev) &nbsp;&middot;&nbsp;
-> Twitter [@cassiofb_dev](https://twitter.com/cassiofb_dev)
+## Development Workflow
+
+### Run Development Server
+Start the local Next.js development server:
+```bash
+pnpm dev
+```
+Open [http://localhost:3000](http://localhost:3000) with your browser to view the application.
+
+- The application uses `initOpenNextCloudflareForDev()` inside `next.config.ts` to expose the local D1 database bindings.
+- Database access is lazily initialized via a request-scoped Proxy wrapper in `lib/prisma.ts`.
+- The local server dynamically updates and hot-reloads as files change.
+
+### Create a New Database Migration
+If you make changes to `prisma/schema.prisma`:
+1. Generate the SQL migration schema script:
+   ```bash
+   pnpm exec prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > migrations/XXXX_migration_name.sql
+   ```
+   *(Or diff from a baseline/previous migration/state)*
+2. Apply the migration to the local D1 database:
+   ```bash
+   pnpm exec wrangler d1 migrations apply fide-db --local
+   ```
+3. Update database types:
+   ```bash
+   pnpm exec prisma generate
+   ```
+
+---
+
+## Preview & Deployment
+
+### Preview Locally (Cloudflare Worker Environment)
+To build and preview the compiled application locally in a environment simulating the Cloudflare Worker runtime (`workerd`):
+```bash
+pnpm preview
+```
+
+### Deploy to Cloudflare
+To build and deploy the application live onto Cloudflare Pages:
+```bash
+pnpm deploy
+```
+
+#### Production Database Migrations
+To apply your migrations to the production Cloudflare D1 database:
+```bash
+pnpm exec wrangler d1 migrations apply fide-db --remote
+```
+
+---
+
+## API Documentation & Endpoints
+
+This project provides an interactive OpenAPI reference UI powered by [Scalar](https://github.com/scalar/scalar), as well as the raw OpenAPI specification.
+
+- **Interactive API Documentation**: [/docs](http://localhost:3000/docs) (when running locally)
+- **OpenAPI 3.1 JSON Specification**: [/openapi.json](http://localhost:3000/openapi.json)
+
+### API Endpoints
+
+All endpoints support caching and database upserts. If `forceUpdate=true` is provided, a fresh scraper request is sent to FIDE's website, and the database cache is updated.
+
+#### 1. Get Top Player List
+Retrieve the ranking list of the top 100 chess players across various categories.
+- **URL**: `/api/list`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `list` (optional, default: `open`): The category list type. Available values:
+    - `open` (Standard Open), `men_rapid` (Rapid Open), `men_blitz` (Blitz Open)
+    - `women` (Standard Women), `women_rapid` (Rapid Women), `women_blitz` (Blitz Women)
+    - `juniors` (Standard Juniors), `juniors_rapid` (Rapid Juniors), `juniors_blitz` (Blitz Juniors)
+    - `girls` (Standard Girls), `girls_rapid` (Rapid Girls), `girls_blitz` (Blitz Girls)
+  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
+- **Example request**:
+  ```bash
+  curl "http://localhost:3000/api/list?list=open"
+  ```
+
+#### 2. Get Player Profile
+Retrieve core profile information for a player, including federations, birth year, titles, and active ratings.
+- **URL**: `/api/profile`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `id` (required): The official FIDE ID of the player (e.g. `1503014` for Magnus Carlsen).
+  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
+- **Example request**:
+  ```bash
+  curl "http://localhost:3000/api/profile?id=1503014"
+  ```
+
+#### 3. Get Player Rating History
+Retrieve the chronological rating progress chart points for the player across standard, rapid, and blitz time controls.
+- **URL**: `/api/profile/history`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `id` (required): The official FIDE ID of the player.
+  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
+- **Example request**:
+  ```bash
+  curl "http://localhost:3000/api/profile/history?id=1503014"
+  ```
+
+#### 4. Get Player Game Statistics
+Retrieve win/draw/loss counts split by color (White vs. Black) and format (Standard, Rapid, Blitz).
+- **URL**: `/api/profile/stats`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `id` (required): The official FIDE ID of the player.
+  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
+- **Example request**:
+  ```bash
+  curl "http://localhost:3000/api/profile/stats?id=1503014"
+  ```
+
