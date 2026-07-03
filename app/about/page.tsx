@@ -105,28 +105,38 @@ export default function AboutPage() {
             </ul>
           </div>
 
-          {/* Card 4: OpenAPI Documentation */}
+          {/* Card 4: OpenAPI Documentation & Source */}
           <div className="bg-zinc-900/20 border border-zinc-900 p-6 rounded-2xl space-y-4">
             <h3 className="font-semibold text-zinc-200 text-base flex items-center gap-2">
               <span className="w-1.5 h-6 bg-cyan-500 rounded-full"></span>
-              Developer APIs
+              Developer Resources & Source
             </h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              We provide clean, public REST API routes for lists, profiles, statistics, and history. Check our developer tools to inspect and integrate.
+              We provide clean, public REST API routes for lists, profiles, statistics, and history. Check our developer tools or explore the source code.
             </p>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Link
                 href="/docs"
-                className="flex-1 text-center py-2 px-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-semibold text-white shadow-sm transition-all"
+                className="text-center py-2 px-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-semibold text-white shadow-sm transition-all"
               >
                 Scalar API Docs
               </Link>
               <Link
                 href="/openapi.json"
                 target="_blank"
-                className="flex-1 text-center py-2 px-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 rounded-xl text-xs font-semibold text-zinc-300 transition-all"
+                className="text-center py-2 px-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 rounded-xl text-xs font-semibold text-zinc-300 transition-all"
               >
                 OpenAPI Spec
+              </Link>
+              <Link
+                href="https://github.com/cassiofb-dev/fide-api"
+                target="_blank"
+                className="text-center py-2 px-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 rounded-xl text-xs font-semibold text-zinc-300 transition-all flex items-center justify-center gap-1.5"
+              >
+                <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5" aria-hidden="true">
+                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                </svg>
+                GitHub Repo
               </Link>
             </div>
           </div>
