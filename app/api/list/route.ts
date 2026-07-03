@@ -10,13 +10,16 @@ export async function GET(request: Request) {
   try {
     // 1. Check cache if not forcing update
     if (!forceUpdate) {
-      const cached = await prisma.topList.findMany({
+      const cached = await prisma.topList.findUnique({
         where: { listType },
-        orderBy: { rank: 'asc' },
       })
 
-      if (cached.length > 0) {
-        return NextResponse.json({ source: 'cache', data: cached })
+      if (cached) {
+        return NextResponse.json({
+          source: 'cache',
+          data: JSON.parse(cached.data),
+          updatedAt: cached.updatedAt,
+        })
       }
     }
 
@@ -24,27 +27,22 @@ export async function GET(request: Request) {
     const players = await scrapeTopList(listType)
 
     // 3. Save to database
-    // Clear old list items for this listType first
-    await prisma.topList.deleteMany({ where: { listType } })
-    await prisma.topList.createMany({
-      data: players.map(p => ({
-        listType,
-        rank: p.rank,
-        fideId: p.fideId,
-        name: p.name,
-        fed: p.fed,
-        rating: p.rating,
-        bYear: p.bYear,
-      })),
-    })
-
-    // Get the newly saved records
-    const saved = await prisma.topList.findMany({
+    const saved = await prisma.topList.upsert({
       where: { listType },
-      orderBy: { rank: 'asc' },
+      update: {
+        data: JSON.stringify(players),
+      },
+      create: {
+        listType,
+        data: JSON.stringify(players),
+      },
     })
 
-    return NextResponse.json({ source: 'scrape', data: saved })
+    return NextResponse.json({
+      source: 'scrape',
+      data: JSON.parse(saved.data),
+      updatedAt: saved.updatedAt,
+    })
   } catch (error: any) {
     console.error(`Error in /api/list:`, error)
     return NextResponse.json(

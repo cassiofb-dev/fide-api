@@ -70,9 +70,14 @@
                       "items": {
                         "$ref": "#/components/schemas/TopListPlayer"
                       }
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2026-07-02T22:30:15.000Z"
                     }
                   },
-                  "required": ["source", "data"]
+                  "required": ["source", "data", "updatedAt"]
                 }
               }
             }
@@ -339,15 +344,6 @@
       "TopListPlayer": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "example": "a3b4c5d6-e7f8-9012-3456-7890abcdef12"
-          },
-          "listType": {
-            "type": "string",
-            "example": "open"
-          },
           "rank": {
             "type": "integer",
             "example": 1
@@ -371,19 +367,9 @@
           "bYear": {
             "type": ["integer", "null"],
             "example": 1990
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-07-02T22:30:15.000Z"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-07-02T22:30:15.000Z"
           }
         },
-        "required": ["id", "listType", "rank", "fideId", "name", "rating", "createdAt", "updatedAt"]
+        "required": ["rank", "fideId", "name", "rating"]
       },
       "Player": {
         "type": "object",
