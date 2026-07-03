@@ -70,16 +70,8 @@ model PlayerStats {
 }
 
 model TopList {
-  id        String   @id @default(uuid())
-  listType  String   // e.g. "open", "women", "juniors_rapid"
-  rank      Int
-  fideId    Int
-  name      String
-  fed       String?
-  rating    Int
-  bYear     Int?
+  listType  String   @id // e.g. "open", "women", "juniors_rapid"
+  data      String   // JSON string containing TopListPlayer[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@unique([listType, rank])
 }
