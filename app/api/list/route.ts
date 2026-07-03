@@ -23,22 +23,20 @@ export async function GET(request: Request) {
     // 2. Scrape from FIDE
     const players = await scrapeTopList(listType)
 
-    // 3. Save to database in a transaction
+    // 3. Save to database
     // Clear old list items for this listType first
-    await prisma.$transaction([
-      prisma.topList.deleteMany({ where: { listType } }),
-      prisma.topList.createMany({
-        data: players.map(p => ({
-          listType,
-          rank: p.rank,
-          fideId: p.fideId,
-          name: p.name,
-          fed: p.fed,
-          rating: p.rating,
-          bYear: p.bYear,
-        })),
-      }),
-    ])
+    await prisma.topList.deleteMany({ where: { listType } })
+    await prisma.topList.createMany({
+      data: players.map(p => ({
+        listType,
+        rank: p.rank,
+        fideId: p.fideId,
+        name: p.name,
+        fed: p.fed,
+        rating: p.rating,
+        bYear: p.bYear,
+      })),
+    })
 
     // Get the newly saved records
     const saved = await prisma.topList.findMany({

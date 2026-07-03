@@ -113,7 +113,7 @@ export default function Home() {
     setListError(null)
     try {
       const res = await fetch(`/api/list?list=${listName}${force ? '&forceUpdate=true' : ''}`)
-      const data = await res.json()
+      const data = (await res.json()) as any
       if (data.error) throw new Error(data.error)
       setPlayers(data.data || [])
       
@@ -134,7 +134,7 @@ export default function Home() {
     setDetailError(null)
     try {
       const res = await fetch(`/api/profile?id=${fideId}${force ? '&forceUpdate=true' : ''}`)
-      const data = await res.json()
+      const data = (await res.json()) as any
       if (data.error) throw new Error(data.error)
       setPlayerDetail(data.data)
     } catch (err: any) {

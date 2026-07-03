@@ -22,103 +22,110 @@ export async function GET(request: Request) {
       const player = await prisma.player.findUnique({
         where: { id: fideId },
         include: {
-          charts: true,
+          chart: true,
           stats: true,
         }
       })
 
       if (player) {
-        return NextResponse.json({ source: 'cache', data: player })
+        const { chart, ...rest } = player
+        const formattedPlayer = {
+          ...rest,
+          charts: chart ? JSON.parse(chart.data) : []
+        }
+        return NextResponse.json({ source: 'cache', data: formattedPlayer })
       }
     }
 
     // 2. Scrape player profile from FIDE
     const profile = await scrapePlayerProfile(fideId)
 
-    // 3. Save to database in a transaction
-    await prisma.$transaction(async (tx: any) => {
-      // Upsert Player
-      await tx.player.upsert({
-        where: { id: fideId },
-        update: {
-          name: profile.name,
-          federation: profile.federation,
-          birthYear: profile.birthYear,
-          gender: profile.gender,
-          title: profile.title,
-          stdRating: profile.stdRating,
-          rapidRating: profile.rapidRating,
-          blitzRating: profile.blitzRating,
-          worldRankActive: profile.worldRankActive,
-          worldRankAll: profile.worldRankAll,
-          nationalRankActive: profile.nationalRankActive,
-          nationalRankAll: profile.nationalRankAll,
-          continentRankActive: profile.continentRankActive,
-          continentRankAll: profile.continentRankAll,
-        },
-        create: {
-          id: fideId,
-          name: profile.name,
-          federation: profile.federation,
-          birthYear: profile.birthYear,
-          gender: profile.gender,
-          title: profile.title,
-          stdRating: profile.stdRating,
-          rapidRating: profile.rapidRating,
-          blitzRating: profile.blitzRating,
-          worldRankActive: profile.worldRankActive,
-          worldRankAll: profile.worldRankAll,
-          nationalRankActive: profile.nationalRankActive,
-          nationalRankAll: profile.nationalRankAll,
-          continentRankActive: profile.continentRankActive,
-          continentRankAll: profile.continentRankAll,
-        }
-      })
-
-      // Delete old charts and insert new ones
-      await tx.playerChart.deleteMany({ where: { playerId: fideId } })
-      if (profile.charts.length > 0) {
-        await tx.playerChart.createMany({
-          data: profile.charts.map(c => ({
-            playerId: fideId,
-            period: c.period,
-            rating: c.rating,
-            games: c.games,
-            rapidRating: c.rapidRating,
-            rapidGames: c.rapidGames,
-            blitzRating: c.blitzRating,
-            blitzGames: c.blitzGames,
-          }))
-        })
-      }
-
-      // Upsert stats
-      if (profile.stats) {
-        await tx.playerStats.upsert({
-          where: { playerId: fideId },
-          update: {
-            ...profile.stats
-          },
-          create: {
-            playerId: fideId,
-            ...profile.stats
-          }
-        })
-      } else {
-        await tx.playerStats.deleteMany({ where: { playerId: fideId } })
+    // 3. Save to database
+    // Upsert Player
+    await prisma.player.upsert({
+      where: { id: fideId },
+      update: {
+        name: profile.name,
+        federation: profile.federation,
+        birthYear: profile.birthYear,
+        gender: profile.gender,
+        title: profile.title,
+        stdRating: profile.stdRating,
+        rapidRating: profile.rapidRating,
+        blitzRating: profile.blitzRating,
+        worldRankActive: profile.worldRankActive,
+        worldRankAll: profile.worldRankAll,
+        nationalRankActive: profile.nationalRankActive,
+        nationalRankAll: profile.nationalRankAll,
+        continentRankActive: profile.continentRankActive,
+        continentRankAll: profile.continentRankAll,
+      },
+      create: {
+        id: fideId,
+        name: profile.name,
+        federation: profile.federation,
+        birthYear: profile.birthYear,
+        gender: profile.gender,
+        title: profile.title,
+        stdRating: profile.stdRating,
+        rapidRating: profile.rapidRating,
+        blitzRating: profile.blitzRating,
+        worldRankActive: profile.worldRankActive,
+        worldRankAll: profile.worldRankAll,
+        nationalRankActive: profile.nationalRankActive,
+        nationalRankAll: profile.nationalRankAll,
+        continentRankActive: profile.continentRankActive,
+        continentRankAll: profile.continentRankAll,
       }
     })
+
+    // Save/update chart data
+    await prisma.playerChart.upsert({
+      where: { playerId: fideId },
+      update: {
+        data: JSON.stringify(profile.charts)
+      },
+      create: {
+        playerId: fideId,
+        data: JSON.stringify(profile.charts)
+      }
+    })
+
+    // Upsert stats
+    if (profile.stats) {
+      await prisma.playerStats.upsert({
+        where: { playerId: fideId },
+        update: {
+          ...profile.stats
+        },
+        create: {
+          playerId: fideId,
+          ...profile.stats
+        }
+      })
+    } else {
+      await prisma.playerStats.deleteMany({ where: { playerId: fideId } })
+    }
 
     // 4. Retrieve complete saved profile
     const savedPlayer = await prisma.player.findUnique({
       where: { id: fideId },
       include: {
-        charts: true,
+        chart: true,
         stats: true,
       }
     })
 
-    return NextResponse.json({ source: 'scrape', data: savedPlayer })
+    if (savedPlayer) {
+      const { chart, ...rest } = savedPlayer
+      const formattedPlayer = {
+        ...rest,
+        charts: chart ? JSON.parse(chart.data) : []
+      }
+      return NextResponse.json({ source: 'scrape', data: formattedPlayer })
+    }
+
+    return NextResponse.json({ error: 'Player profile not found after saving' }, { status: 500 })
   } catch (error: any) {
     console.error(`Error in /api/profile for ID ${fideId}:`, error)
     return NextResponse.json(

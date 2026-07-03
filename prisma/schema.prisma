@@ -28,23 +28,14 @@ model Player {
   continentRankAll    Int?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
-  charts              PlayerChart[]
+  chart               PlayerChart?
   stats               PlayerStats?
 }
 
 model PlayerChart {
-  id          String   @id @default(uuid())
-  playerId    Int
-  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  period      String   // e.g. "2003-Apr"
-  rating      Int?
-  games       Int?
-  rapidRating Int?
-  rapidGames  Int?
-  blitzRating Int?
-  blitzGames  Int?
-
-  @@unique([playerId, period])
+  playerId  Int    @id
+  player    Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  data      String // JSON string containing rating history points
 }
 
 model PlayerStats {

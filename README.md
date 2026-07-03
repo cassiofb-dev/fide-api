@@ -1,86 +1,92 @@
-# FIDE API Scraper & Analytics Dashboard
+# FIDE API Scraper & Viewer
 
-A premium web application and scraper that fetches, caches, and visualizes chess player profiles, rating history, and match statistics directly from the official FIDE website. Built with Next.js, Prisma, and Cloudflare D1.
-
-## Features
-
-- **Rankings Cache & Viewer**: Browse FIDE Top 100 lists for multiple formats (Standard, Rapid, Blitz) across divisions (Open, Women, Juniors, Girls) with automatic SQLite/D1 database caching.
-- **Player Lookup**: Query any player directly by FIDE ID (e.g. `1503014` for GM Magnus Carlsen) to retrieve and cache their profile.
-- **Rating History Chart**: Interactive, animated custom SVG area charts mapping the player's historical standard, rapid, and blitz ratings over time.
-- **Game Statistics Visualizer**: Visually inspect the player's win/draw/loss distribution for playing with White and Black pieces.
-- **Real-Time Database Sync**: Force-refresh rankings and profile statistics directly from the live FIDE website.
+A modern Next.js application designed to scrape and display top chess players' ratings and profile details from the official FIDE website, using Cloudflare Pages, Cloudflare D1 (SQLite), and Prisma ORM.
 
 ## Tech Stack
-
-- **Framework**: Next.js 15+ (App Router)
-- **Styling**: Tailwind CSS v4 (vanilla aesthetic modern dark design)
-- **Database**: Cloudflare D1 (with local SQLite fallback for development)
-- **ORM**: Prisma 7 (using modern pluggable Driver Adapters: `@prisma/adapter-better-sqlite3` and `@prisma/adapter-d1`)
-- **Scraper**: Cheerio (for robust DOM parsing and scraping)
+- **Framework**: Next.js 16 (App Router)
+- **Deployment & Hosting**: Cloudflare Pages
+- **Database**: Cloudflare D1
+- **ORM**: Prisma 7 (with `@prisma/adapter-d1` and `prisma.config.ts`)
+- **Package Manager**: pnpm
 
 ---
 
 ## Getting Started
 
-### 1. Install Dependencies
+Follow the steps below to configure your local development environment, set up the local D1 state, and run/deploy the project.
 
-Install project workspace dependencies using `pnpm`:
+### 1. Prerequisites
+Make sure you have Node.js, `pnpm` installed, and a Cloudflare account setup.
 
+Install dependencies:
 ```bash
 pnpm install
 ```
 
-### 2. Database Synchronization
+### 2. Configure Local D1 State & Migrations
+Prisma CLI in version 7+ utilizes `prisma.config.ts` to manage datasource URLs instead of loading them from `schema.prisma`. 
 
-Prisma 7 connection URLs are configured inside `prisma.config.ts`. Set up the local SQLite database file (`dev.db`) and synchronize your database schema:
+1. **Generate type definitions** for Cloudflare bindings:
+   ```bash
+   pnpm cf-typegen
+   ```
+2. **Apply migrations** to your local D1 database:
+   ```bash
+   pnpm exec wrangler d1 migrations apply fide-db --local
+   ```
+   *(Confirm with `y` when prompted)*
 
-```bash
-npx prisma db push
-```
+This initializes your local SQLite database structure in `.wrangler/state`.
 
-### 3. Run Development Server
+---
 
-Launch the Next.js development server:
+## Development Workflow
 
+### Run Development Server
+Start the local Next.js development server:
 ```bash
 pnpm dev
 ```
+Open [http://localhost:3000](http://localhost:3000) with your browser to view the application.
 
-Open [http://localhost:3000](http://localhost:3000) on your browser to view the dashboard.
+- The application uses `initOpenNextCloudflareForDev()` inside `next.config.ts` to expose the local D1 database bindings.
+- Database access is lazily initialized via a request-scoped Proxy wrapper in `lib/prisma.ts`.
+- The local server dynamically updates and hot-reloads as files change.
 
----
-
-## Cloudflare Pages & D1 Deployment
-
-This project is configured to run on Cloudflare Pages using Cloudflare D1 as the production database.
-
-### 1. Create a D1 Database
-Create your remote D1 database using Wrangler:
-```bash
-npx wrangler d1 create fide-db
-```
-Copy the `database_id` from the output and update it in your [wrangler.json](file:///home/cassio/Documents/Code/fide-api/wrangler.json).
-
-### 2. Initialize Database Schema
-Generate the SQL schema script from your Prisma schema:
-```bash
-npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > migration.sql
-```
-Apply the migration schema to your remote D1 database:
-```bash
-npx wrangler d1 execute fide-db --remote --file=./migration.sql
-```
-
-### 3. Build & Deploy
-Compile and deploy the application to Cloudflare Pages:
-```bash
-npx @cloudflare/next-on-pages
-npx wrangler pages deploy .open-next
-```
+### Create a New Database Migration
+If you make changes to `prisma/schema.prisma`:
+1. Generate the SQL migration schema script:
+   ```bash
+   pnpm exec prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > migrations/XXXX_migration_name.sql
+   ```
+   *(Or diff from a baseline/previous migration/state)*
+2. Apply the migration to the local D1 database:
+   ```bash
+   pnpm exec wrangler d1 migrations apply fide-db --local
+   ```
+3. Update database types:
+   ```bash
+   pnpm exec prisma generate
+   ```
 
 ---
 
-## License
+## Preview & Deployment
 
-MIT License • Copyright (c) 2026 cassiofernando
+### Preview Locally (Cloudflare Worker Environment)
+To build and preview the compiled application locally in a environment simulating the Cloudflare Worker runtime (`workerd`):
+```bash
+pnpm preview
+```
 
+### Deploy to Cloudflare
+To build and deploy the application live onto Cloudflare Pages:
+```bash
+pnpm deploy
+```
+
+#### Production Database Migrations
+To apply your migrations to the production Cloudflare D1 database:
+```bash
+pnpm exec wrangler d1 migrations apply fide-db --remote
+```
