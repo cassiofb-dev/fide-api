@@ -24,7 +24,11 @@ export async function GET(request: Request) {
       })
 
       if (stats) {
-        return NextResponse.json({ source: 'cache', data: stats })
+        return NextResponse.json({
+          source: 'cache',
+          data: stats,
+          updatedAt: stats.updatedAt
+        })
       }
     }
 
@@ -68,10 +72,18 @@ export async function GET(request: Request) {
           ...stats
         }
       })
-      return NextResponse.json({ source: 'scrape', data: savedStats })
+      return NextResponse.json({
+        source: 'scrape',
+        data: savedStats,
+        updatedAt: savedStats.updatedAt
+      })
     } else {
       await prisma.playerStats.deleteMany({ where: { playerId: fideId } })
-      return NextResponse.json({ source: 'scrape', data: null })
+      return NextResponse.json({
+        source: 'scrape',
+        data: null,
+        updatedAt: null
+      })
     }
   } catch (error: any) {
     console.error(`Error in /api/profile/stats for ID ${fideId}:`, error)

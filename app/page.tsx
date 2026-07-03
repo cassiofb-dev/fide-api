@@ -111,6 +111,8 @@ export default function Home() {
   const [statsStatus, setStatsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle')
   const [playerHistory, setPlayerHistory] = useState<PlayerChart[]>([])
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
+  const [historyUpdatedAt, setHistoryUpdatedAt] = useState<string | null>(null)
+  const [statsUpdatedAt, setStatsUpdatedAt] = useState<string | null>(null)
 
   // Load top list
   const fetchList = async (listName: string, force = false) => {
@@ -162,9 +164,10 @@ export default function Home() {
     setHistoryStatus('loading')
     try {
       const res = await fetch(`/api/profile/history?id=${fideId}${force ? '&forceUpdate=true' : ''}`)
-      const data = (await res.json()) as any
-      if (data.error) throw new Error(data.error)
-      setPlayerHistory(data.data || [])
+      const resData = (await res.json()) as any
+      if (resData.error) throw new Error(resData.error)
+      setPlayerHistory(resData.data || [])
+      setHistoryUpdatedAt(resData.updatedAt || null)
       setHistoryStatus('loaded')
     } catch (err: any) {
       console.error(err)
@@ -176,9 +179,10 @@ export default function Home() {
     setStatsStatus('loading')
     try {
       const res = await fetch(`/api/profile/stats?id=${fideId}${force ? '&forceUpdate=true' : ''}`)
-      const data = (await res.json()) as any
-      if (data.error) throw new Error(data.error)
-      setPlayerStats(data.data || null)
+      const resData = (await res.json()) as any
+      if (resData.error) throw new Error(resData.error)
+      setPlayerStats(resData.data || null)
+      setStatsUpdatedAt(resData.updatedAt || null)
       setStatsStatus('loaded')
     } catch (err: any) {
       console.error(err)
@@ -198,6 +202,8 @@ export default function Home() {
       setStatsStatus('idle')
       setPlayerHistory([])
       setPlayerStats(null)
+      setHistoryUpdatedAt(null)
+      setStatsUpdatedAt(null)
     }
   }, [selectedPlayerId])
 
@@ -656,7 +662,14 @@ export default function Home() {
               ) : svgParams ? (
                 <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Rating History</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Rating History</h3>
+                      {mounted && historyUpdatedAt && (
+                        <span className="text-[10px] text-amber-500/80 font-semibold bg-amber-500/5 px-2 py-0.5 rounded-md border border-amber-500/10">
+                          Synced: {new Date(historyUpdatedAt).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3">
                       <div className="text-xs text-zinc-500 font-medium">
                         Range: {svgParams.minRating + 40} – {svgParams.maxRating - 40}
@@ -857,6 +870,11 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Game Statistics</h3>
+                      {mounted && statsUpdatedAt && (
+                        <span className="text-[10px] text-amber-500/80 font-semibold bg-amber-500/5 px-2 py-0.5 rounded-md border border-amber-500/10">
+                          Synced: {new Date(statsUpdatedAt).toLocaleString()}
+                        </span>
+                      )}
                       <button
                         onClick={() => fetchStats(playerDetail.id, true)}
                         title="Force Update Stats"

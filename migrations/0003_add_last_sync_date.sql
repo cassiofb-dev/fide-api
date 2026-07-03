@@ -1,0 +1,7 @@
+-- Migration number: 0003 	 2026-07-03T02:25:00.000Z
+
+-- AlterTable
+ALTER TABLE "PlayerChart" ADD COLUMN "updatedAt" DATETIME NOT NULL DEFAULT '2026-07-03 02:25:00';
+
+-- AlterTable
+ALTER TABLE "PlayerStats" ADD COLUMN "updatedAt" DATETIME NOT NULL DEFAULT '2026-07-03 02:25:00';

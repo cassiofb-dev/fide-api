@@ -33,9 +33,10 @@ model Player {
 }
 
 model PlayerChart {
-  playerId  Int    @id
-  player    Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  data      String // JSON string containing rating history points
+  playerId  Int      @id
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  data      String   // JSON string containing rating history points
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model PlayerStats {
@@ -65,6 +66,7 @@ model PlayerStats {
   blackTotalBlz     Int
   blackWinNumBlz    Int
   blackDrawNumBlz   Int
+  updatedAt         DateTime @default(now()) @updatedAt
 }
 
 model TopList {

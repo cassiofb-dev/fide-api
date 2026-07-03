@@ -24,7 +24,11 @@ export async function GET(request: Request) {
       })
 
       if (chart) {
-        return NextResponse.json({ source: 'cache', data: JSON.parse(chart.data) })
+        return NextResponse.json({
+          source: 'cache',
+          data: JSON.parse(chart.data),
+          updatedAt: chart.updatedAt
+        })
       }
     }
 
@@ -68,7 +72,11 @@ export async function GET(request: Request) {
       }
     })
 
-    return NextResponse.json({ source: 'scrape', data: JSON.parse(savedChart.data) })
+    return NextResponse.json({
+      source: 'scrape',
+      data: JSON.parse(savedChart.data),
+      updatedAt: savedChart.updatedAt
+    })
   } catch (error: any) {
     console.error(`Error in /api/profile/history for ID ${fideId}:`, error)
     return NextResponse.json(
