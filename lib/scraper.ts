@@ -9,6 +9,43 @@ export interface TopListPlayer {
   bYear: number | null
 }
 
+export interface PlayerChartItem {
+  period: string
+  rating: number | null
+  games: number | null
+  rapidRating: number | null
+  rapidGames: number | null
+  blitzRating: number | null
+  blitzGames: number | null
+}
+
+export interface PlayerStatsData {
+  whiteTotal: number
+  whiteWinNum: number
+  whiteDrawNum: number
+  blackTotal: number
+  blackWinNum: number
+  blackDrawNum: number
+  whiteTotalStd: number
+  whiteWinNumStd: number
+  whiteDrawNumStd: number
+  blackTotalStd: number
+  blackWinNumStd: number
+  blackDrawNumStd: number
+  whiteTotalRpd: number
+  whiteWinNumRpd: number
+  whiteDrawNumRpd: number
+  blackTotalRpd: number
+  blackWinNumRpd: number
+  blackDrawNumRpd: number
+  whiteTotalBlz: number
+  whiteWinNumBlz: number
+  whiteDrawNumBlz: number
+  blackTotalBlz: number
+  blackWinNumBlz: number
+  blackDrawNumBlz: number
+}
+
 export interface PlayerProfile {
   id: number
   name: string
@@ -25,41 +62,8 @@ export interface PlayerProfile {
   nationalRankAll: number | null
   continentRankActive: number | null
   continentRankAll: number | null
-  charts: {
-    period: string
-    rating: number | null
-    games: number | null
-    rapidRating: number | null
-    rapidGames: number | null
-    blitzRating: number | null
-    blitzGames: number | null
-  }[]
-  stats: {
-    whiteTotal: number
-    whiteWinNum: number
-    whiteDrawNum: number
-    blackTotal: number
-    blackWinNum: number
-    blackDrawNum: number
-    whiteTotalStd: number
-    whiteWinNumStd: number
-    whiteDrawNumStd: number
-    blackTotalStd: number
-    blackWinNumStd: number
-    blackDrawNumStd: number
-    whiteTotalRpd: number
-    whiteWinNumRpd: number
-    whiteDrawNumRpd: number
-    blackTotalRpd: number
-    blackWinNumRpd: number
-    blackDrawNumRpd: number
-    whiteTotalBlz: number
-    whiteWinNumBlz: number
-    whiteDrawNumBlz: number
-    blackTotalBlz: number
-    blackWinNumBlz: number
-    blackDrawNumBlz: number
-  } | null
+  charts?: PlayerChartItem[]
+  stats?: PlayerStatsData | null
 }
 
 const COMMON_HEADERS = {
@@ -196,8 +200,28 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
     }
   })
 
-  // Fetch Chart Data
-  let charts: PlayerProfile['charts'] = []
+  return {
+    id: fideId,
+    name,
+    federation,
+    birthYear,
+    gender,
+    title,
+    stdRating,
+    rapidRating,
+    blitzRating,
+    worldRankActive,
+    worldRankAll,
+    nationalRankActive,
+    nationalRankAll,
+    continentRankActive,
+    continentRankAll,
+  }
+}
+
+// Scrape Player Rating History
+export async function scrapePlayerHistory(fideId: number): Promise<PlayerChartItem[]> {
+  const profileUrl = `https://ratings.fide.com/profile/${fideId}`
   try {
     const chartResponse = await fetch(`https://ratings.fide.com/a_chart_data.phtml?event=${fideId}&period=0`, {
       method: 'POST',
@@ -211,7 +235,7 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
     if (chartResponse.ok) {
       const chartJson = await chartResponse.json()
       if (Array.isArray(chartJson)) {
-        charts = chartJson.map((item: any) => ({
+        return chartJson.map((item: any) => ({
           period: item.date_2 || '',
           rating: item.rating ? parseInt(item.rating, 10) : null,
           games: item.period_games ? parseInt(item.period_games, 10) : null,
@@ -225,9 +249,12 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
   } catch (err) {
     console.error('Failed to fetch chart data:', err)
   }
+  return []
+}
 
-  // Fetch Stats Data
-  let stats: PlayerProfile['stats'] = null
+// Scrape Player Stats
+export async function scrapePlayerStats(fideId: number): Promise<PlayerStatsData | null> {
+  const profileUrl = `https://ratings.fide.com/profile/${fideId}`
   try {
     const statsResponse = await fetch(`https://ratings.fide.com/a_data_stats.php?id1=${fideId}&id2=0`, {
       method: 'POST',
@@ -242,7 +269,7 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
       const statsJson = await statsResponse.json()
       if (Array.isArray(statsJson) && statsJson.length > 0) {
         const item = statsJson[0]
-        stats = {
+        return {
           whiteTotal: parseInt(item.white_total, 10) || 0,
           whiteWinNum: parseInt(item.white_win_num, 10) || 0,
           whiteDrawNum: parseInt(item.white_draw_num, 10) || 0,
@@ -276,24 +303,5 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
   } catch (err) {
     console.error('Failed to fetch stats data:', err)
   }
-
-  return {
-    id: fideId,
-    name,
-    federation,
-    birthYear,
-    gender,
-    title,
-    stdRating,
-    rapidRating,
-    blitzRating,
-    worldRankActive,
-    worldRankAll,
-    nationalRankActive,
-    nationalRankAll,
-    continentRankActive,
-    continentRankAll,
-    charts,
-    stats,
-  }
+  return null
 }

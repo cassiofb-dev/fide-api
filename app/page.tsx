@@ -68,8 +68,8 @@ interface PlayerDetail {
   nationalRankAll: number | null
   continentRankActive: number | null
   continentRankAll: number | null
-  charts: PlayerChart[]
-  stats: PlayerStats | null
+  charts?: PlayerChart[]
+  stats?: PlayerStats | null
   updatedAt?: string
 }
 
@@ -107,6 +107,11 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statsFormat, setStatsFormat] = useState<'all' | 'std' | 'rpd' | 'blz'>('all')
 
+  const [historyStatus, setHistoryStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle')
+  const [statsStatus, setStatsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle')
+  const [playerHistory, setPlayerHistory] = useState<PlayerChart[]>([])
+  const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
+
   // Load top list
   const fetchList = async (listName: string, force = false) => {
     setListLoading(true)
@@ -137,10 +142,47 @@ export default function Home() {
       const data = (await res.json()) as any
       if (data.error) throw new Error(data.error)
       setPlayerDetail(data.data)
+
+      if (force) {
+        if (historyStatus === 'loaded') {
+          fetchHistory(fideId, true)
+        }
+        if (statsStatus === 'loaded') {
+          fetchStats(fideId, true)
+        }
+      }
     } catch (err: any) {
       setDetailError(err.message || 'Failed to fetch player profile')
     } finally {
       setDetailLoading(false)
+    }
+  }
+
+  const fetchHistory = async (fideId: number, force = false) => {
+    setHistoryStatus('loading')
+    try {
+      const res = await fetch(`/api/profile/history?id=${fideId}${force ? '&forceUpdate=true' : ''}`)
+      const data = (await res.json()) as any
+      if (data.error) throw new Error(data.error)
+      setPlayerHistory(data.data || [])
+      setHistoryStatus('loaded')
+    } catch (err: any) {
+      console.error(err)
+      setHistoryStatus('error')
+    }
+  }
+
+  const fetchStats = async (fideId: number, force = false) => {
+    setStatsStatus('loading')
+    try {
+      const res = await fetch(`/api/profile/stats?id=${fideId}${force ? '&forceUpdate=true' : ''}`)
+      const data = (await res.json()) as any
+      if (data.error) throw new Error(data.error)
+      setPlayerStats(data.data || null)
+      setStatsStatus('loaded')
+    } catch (err: any) {
+      console.error(err)
+      setStatsStatus('error')
     }
   }
 
@@ -151,6 +193,11 @@ export default function Home() {
   useEffect(() => {
     if (selectedPlayerId) {
       fetchPlayerDetail(selectedPlayerId)
+      // Reset on-demand loaded state
+      setHistoryStatus('idle')
+      setStatsStatus('idle')
+      setPlayerHistory([])
+      setPlayerStats(null)
     }
   }, [selectedPlayerId])
 
@@ -165,7 +212,7 @@ export default function Home() {
 
   // Sort and filter chart data for SVG
   const chartData = useMemo(() => {
-    if (!playerDetail || !playerDetail.charts || playerDetail.charts.length === 0) return []
+    if (playerHistory.length === 0) return []
     
     const monthsMap: Record<string, number> = {
       Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
@@ -179,9 +226,9 @@ export default function Home() {
       return new Date(year, month, 1)
     }
 
-    return [...playerDetail.charts]
+    return [...playerHistory]
       .sort((a, b) => parsePeriod(a.period).getTime() - parsePeriod(b.period).getTime())
-  }, [playerDetail])
+  }, [playerHistory])
 
   // Get SVG dimensions and coordinates
   const svgParams = useMemo(() => {
@@ -231,8 +278,8 @@ export default function Home() {
 
   // Parse Stats values
   const currentStats = useMemo(() => {
-    if (!playerDetail || !playerDetail.stats) return null
-    const s = playerDetail.stats
+    if (!playerStats) return null
+    const s = playerStats
     if (statsFormat === 'std') {
       return {
         white: { total: s.whiteTotalStd, win: s.whiteWinNumStd, draw: s.whiteDrawNumStd },
@@ -253,7 +300,7 @@ export default function Home() {
       white: { total: s.whiteTotal, win: s.whiteWinNum, draw: s.whiteDrawNum },
       black: { total: s.blackTotal, win: s.blackWinNum, draw: s.blackDrawNum }
     }
-  }, [playerDetail, statsFormat])
+  }, [playerStats, statsFormat])
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans antialiased selection:bg-amber-500/30 selection:text-amber-200">
@@ -554,12 +601,75 @@ export default function Home() {
               </div>
 
               {/* Progress Chart */}
-              {svgParams ? (
+              {historyStatus === 'idle' ? (
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[240px] relative overflow-hidden group">
+                  {/* Dashed background to simulate a hidden chart */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none select-none flex items-center justify-center">
+                    <svg viewBox="0 0 600 240" className="w-full h-full text-amber-500">
+                      <path d="M 50 180 L 150 140 L 250 160 L 350 90 L 450 110 L 550 50" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="8 8" />
+                    </svg>
+                  </div>
+                  
+                  <div className="relative z-10 space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto text-amber-400 group-hover:scale-110 transition-transform duration-300">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-zinc-200">Rating History Graph</h4>
+                      <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">Visualize performance progression and rating history over time.</p>
+                    </div>
+                    <button
+                      onClick={() => fetchHistory(playerDetail.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-zinc-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-900/20 transition-all hover:scale-105 active:scale-95 cursor-pointer font-semibold uppercase tracking-wider"
+                    >
+                      Load Rating History
+                    </button>
+                  </div>
+                </div>
+              ) : historyStatus === 'loading' ? (
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[240px] animate-pulse">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-8 h-8 text-zinc-700 animate-spin mb-3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                  <span className="text-xs text-zinc-500 font-medium">Fetching rating history from FIDE...</span>
+                </div>
+              ) : historyStatus === 'error' ? (
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[240px] space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto text-rose-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-rose-400">Failed to Load History</h4>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">There was an issue fetching the player's rating history.</p>
+                  </div>
+                  <button
+                    onClick={() => fetchHistory(playerDetail.id, true)}
+                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                  >
+                    Retry Fetching
+                  </button>
+                </div>
+              ) : svgParams ? (
                 <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Rating History</h3>
-                    <div className="text-xs text-zinc-500 font-medium">
-                      Range: {svgParams.minRating + 40} – {svgParams.maxRating - 40}
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs text-zinc-500 font-medium">
+                        Range: {svgParams.minRating + 40} – {svgParams.maxRating - 40}
+                      </div>
+                      <button
+                        onClick={() => fetchHistory(playerDetail.id, true)}
+                        title="Force Update History"
+                        className="p-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.2" stroke="currentColor" className="w-3.5 h-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
 
@@ -682,10 +792,81 @@ export default function Home() {
               )}
 
               {/* Game Stats */}
-              {currentStats ? (
+              {statsStatus === 'idle' ? (
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] relative overflow-hidden group">
+                  {/* Simulating stats bars in background */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none select-none flex flex-col gap-4 items-center justify-center px-8">
+                    <div className="w-full h-3 bg-zinc-900 rounded-full flex overflow-hidden">
+                      <div className="w-[60%] bg-emerald-500 h-full" />
+                      <div className="w-[20%] bg-zinc-500 h-full" />
+                      <div className="w-[20%] bg-rose-500 h-full" />
+                    </div>
+                    <div className="w-full h-3 bg-zinc-900 rounded-full flex overflow-hidden">
+                      <div className="w-[45%] bg-emerald-500 h-full" />
+                      <div className="w-[25%] bg-zinc-500 h-full" />
+                      <div className="w-[30%] bg-rose-500 h-full" />
+                    </div>
+                  </div>
+                  
+                  <div className="relative z-10 space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-cyan-500/10 flex items-center justify-center mx-auto text-cyan-400 group-hover:scale-110 transition-transform duration-300">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-zinc-200">Win/Loss Game Statistics</h4>
+                      <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">Analyze game counts and success rates playing as White and Black.</p>
+                    </div>
+                    <button
+                      onClick={() => fetchStats(playerDetail.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-zinc-950 text-xs font-bold rounded-xl shadow-lg shadow-cyan-900/20 transition-all hover:scale-105 active:scale-95 cursor-pointer font-semibold uppercase tracking-wider"
+                    >
+                      Load Game Statistics
+                    </button>
+                  </div>
+                </div>
+              ) : statsStatus === 'loading' ? (
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] animate-pulse">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-8 h-8 text-zinc-700 animate-spin mb-3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                  <span className="text-xs text-zinc-500 font-medium">Fetching stats from FIDE...</span>
+                </div>
+              ) : statsStatus === 'error' ? (
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto text-rose-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-rose-400">Failed to Load Stats</h4>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">There was an issue fetching the player's game stats.</p>
+                  </div>
+                  <button
+                    onClick={() => fetchStats(playerDetail.id, true)}
+                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                  >
+                    Retry Fetching
+                  </button>
+                </div>
+              ) : currentStats ? (
                 <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Game Statistics</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Game Statistics</h3>
+                      <button
+                        onClick={() => fetchStats(playerDetail.id, true)}
+                        title="Force Update Stats"
+                        className="p-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.2" stroke="currentColor" className="w-3 h-3">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                      </button>
+                    </div>
                     <div className="flex gap-1.5 bg-zinc-900 p-1 rounded-lg border border-zinc-800 text-xs">
                       {(['all', 'std', 'rpd', 'blz'] as const).map((fmt) => (
                         <button

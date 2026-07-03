@@ -20,20 +20,11 @@ export async function GET(request: Request) {
     // 1. Check cache if not forcing update
     if (!forceUpdate) {
       const player = await prisma.player.findUnique({
-        where: { id: fideId },
-        include: {
-          chart: true,
-          stats: true,
-        }
+        where: { id: fideId }
       })
 
       if (player) {
-        const { chart, ...rest } = player
-        const formattedPlayer = {
-          ...rest,
-          charts: chart ? JSON.parse(chart.data) : []
-        }
-        return NextResponse.json({ source: 'cache', data: formattedPlayer })
+        return NextResponse.json({ source: 'cache', data: player })
       }
     }
 
@@ -42,7 +33,7 @@ export async function GET(request: Request) {
 
     // 3. Save to database
     // Upsert Player
-    await prisma.player.upsert({
+    const savedPlayer = await prisma.player.upsert({
       where: { id: fideId },
       update: {
         name: profile.name,
@@ -79,53 +70,7 @@ export async function GET(request: Request) {
       }
     })
 
-    // Save/update chart data
-    await prisma.playerChart.upsert({
-      where: { playerId: fideId },
-      update: {
-        data: JSON.stringify(profile.charts)
-      },
-      create: {
-        playerId: fideId,
-        data: JSON.stringify(profile.charts)
-      }
-    })
-
-    // Upsert stats
-    if (profile.stats) {
-      await prisma.playerStats.upsert({
-        where: { playerId: fideId },
-        update: {
-          ...profile.stats
-        },
-        create: {
-          playerId: fideId,
-          ...profile.stats
-        }
-      })
-    } else {
-      await prisma.playerStats.deleteMany({ where: { playerId: fideId } })
-    }
-
-    // 4. Retrieve complete saved profile
-    const savedPlayer = await prisma.player.findUnique({
-      where: { id: fideId },
-      include: {
-        chart: true,
-        stats: true,
-      }
-    })
-
-    if (savedPlayer) {
-      const { chart, ...rest } = savedPlayer
-      const formattedPlayer = {
-        ...rest,
-        charts: chart ? JSON.parse(chart.data) : []
-      }
-      return NextResponse.json({ source: 'scrape', data: formattedPlayer })
-    }
-
-    return NextResponse.json({ error: 'Player profile not found after saving' }, { status: 500 })
+    return NextResponse.json({ source: 'scrape', data: savedPlayer })
   } catch (error: any) {
     console.error(`Error in /api/profile for ID ${fideId}:`, error)
     return NextResponse.json(
