@@ -1,4 +1,61 @@
-<svg width="82" height="100" viewBox="0 0 82 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M34.7508 100C26.6445 100 20.0222 98.3167 14.8837 94.9502C9.74529 91.5836 5.98007 87.021 3.58804 81.2625C1.19601 75.4596 0 68.9037 0 61.5947C0 56.3677 0.442968 51.2514 1.3289 46.2458C2.25914 41.196 3.61019 36.3677 5.38206 31.7608C7.15393 27.1539 9.36877 22.9236 12.0266 19.0698C14.7287 15.2159 17.8516 11.8715 21.3953 9.03654C24.9834 6.15725 28.9701 3.94241 33.3555 2.39203C37.7852 0.797342 42.6578 0 47.9734 0C58.3832 0 66.6224 3.21152 72.691 9.63455C78.804 16.0576 81.8605 25.5592 81.8605 38.1395C81.8605 42.4363 81.4839 46.9324 80.7309 51.6279C80.0221 56.3234 78.8926 60.9967 77.3422 65.6478C75.7918 70.2547 73.7763 74.6179 71.2957 78.7375C68.8594 82.8571 65.8915 86.5116 62.392 89.701C58.9369 92.8904 54.9059 95.4153 50.299 97.2757C45.7364 99.0919 40.5537 100 34.7508 100ZM35.0166 93.887C39.7121 93.887 43.9424 93.0676 47.7076 91.4286C51.5172 89.7896 54.8837 87.5304 57.8073 84.6512C60.7752 81.7719 63.3223 78.4939 65.4485 74.8173C67.5748 71.1406 69.3245 67.2204 70.6977 63.0565C72.0709 58.8926 73.0897 54.6844 73.7542 50.4319C74.4186 46.1351 74.7508 42.0155 74.7508 38.0731C74.7508 28.1506 72.4474 20.3544 67.8405 14.6844C63.278 9.0144 56.4784 6.1794 47.4419 6.1794C42.7464 6.1794 38.4718 6.9546 34.6179 8.50498C30.8084 10.0111 27.3976 12.1152 24.3854 14.8173C21.4175 17.5194 18.8483 20.6645 16.6777 24.2525C14.5072 27.8405 12.7132 31.6944 11.2957 35.814C9.87818 39.9336 8.81506 44.1639 8.10631 48.505C7.44186 52.8461 7.10963 57.1429 7.10963 61.3953C7.10963 67.8627 8.10631 73.5327 10.0997 78.4053C12.1373 83.278 15.2159 87.0875 19.3355 89.8339C23.4552 92.536 28.6822 93.887 35.0166 93.887Z" fill="black"/>
-<path d="M21.3167 71.1311V32.0568H30.9394L51.7013 59.6421V32.0568H59.0496V71.1311H51.643L28.665 40.5715V71.1311H21.3167Z" fill="black"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#311042" />
+    </linearGradient>
+    
+    <!-- Rook Violet/Indigo Gradient -->
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+
+    <!-- Gold/Teal Gradient for Stats Trend -->
+    <linearGradient id="goldGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    
+    <!-- Subtle glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  
+  <!-- Outer subtle glowing border -->
+  <rect x="8" y="8" width="496" height="496" rx="120" stroke="url(#neonGrad)" stroke-width="4" stroke-opacity="0.25" />
+
+  <!-- Grid lines representing data/charts -->
+  <path d="M 96 128 L 416 128 M 96 224 L 416 224 M 96 320 L 416 320 M 96 416 L 416 416" stroke="#475569" stroke-width="1.5" stroke-dasharray="8 8" opacity="0.2" />
+  <path d="M 128 96 L 128 416 M 224 96 L 224 416 M 320 96 L 320 416 M 416 96 L 416 416" stroke="#475569" stroke-width="1.5" stroke-dasharray="8 8" opacity="0.2" />
+
+  <!-- Ascending Rating Chart Lines (underneath the rook) -->
+  <path d="M 96 390 C 180 370 240 280 300 210 C 340 160 380 120 416 115" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round" fill="none" filter="url(#glow)" />
+  <circle cx="416" cy="115" r="14" fill="#06b6d4" filter="url(#glow)" />
+  <circle cx="300" cy="210" r="10" fill="#10b981" />
+  <circle cx="196" cy="320" r="8" fill="#eab308" />
+
+  <!-- Stylized Chess Rook -->
+  <!-- Base -->
+  <path d="M 180 400 L 332 400 L 332 370 L 180 370 Z" fill="url(#neonGrad)" filter="url(#glow)" />
+  <!-- Pedestal -->
+  <path d="M 196 370 L 316 370 L 306 340 L 206 340 Z" fill="url(#neonGrad)" opacity="0.9" />
+  <!-- Shaft -->
+  <path d="M 216 340 L 296 340 L 286 220 L 226 220 Z" fill="url(#neonGrad)" />
+  <!-- Collar -->
+  <path d="M 206 220 L 306 220 L 316 195 L 196 195 Z" fill="url(#neonGrad)" opacity="0.9" />
+  <!-- Battlements -->
+  <path d="M 196 195 L 316 195 L 316 150 L 290 150 L 290 170 L 270 170 L 270 150 L 242 150 L 242 170 L 222 170 L 222 150 L 196 150 Z" fill="url(#neonGrad)" />
+  
+  <!-- Vertical highlight line on the Rook shaft -->
+  <path d="M 256 200 L 256 340" stroke="#ffffff" stroke-width="4" opacity="0.3" stroke-linecap="round" />
 </svg>

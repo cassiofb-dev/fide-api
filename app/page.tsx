@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 
 interface ListPlayer {
   rank: number
@@ -325,7 +326,15 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-end">
+          <nav className="flex items-center gap-4">
+            <Link href="/about" className="text-sm font-semibold text-zinc-400 hover:text-zinc-200 transition-colors">
+              About
+            </Link>
+            <Link href="/docs" className="text-sm font-semibold text-zinc-400 hover:text-zinc-200 transition-colors">
+              APIs
+            </Link>
+          </nav>
           <form onSubmit={handleSearch} className="relative flex-grow md:flex-grow-0">
             <input
               type="text"
@@ -983,9 +992,8 @@ export default function Home() {
 
       </main>
 
-      {/* Footer */}
       <footer className="mt-auto border-t border-zinc-900 py-6 text-center text-xs text-zinc-600 font-medium">
-        <p>© 2026 FIDE Analytics Engine. Built with Next.js, Prisma &amp; Cloudflare D1.</p>
+        <p>© 2026 cassiofernando. Built with Next.js, Prisma &amp; Cloudflare D1.</p>
       </footer>
     </div>
   )

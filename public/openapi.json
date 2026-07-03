@@ -1,0 +1,646 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FIDE Chess Ratings & Statistics API",
+    "description": "API for scraping and querying chess player profiles, rating history, game statistics, and top lists directly from the official FIDE website with high-performance database caching.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current Host"
+    }
+  ],
+  "paths": {
+    "/api/list": {
+      "get": {
+        "summary": "Get Top Player List",
+        "description": "Retrieve the top players for a specified list type (e.g., Open Standard, Women Blitz, Juniors Rapid). Returns cached data if available, otherwise scrapes live data from the FIDE website and caches it.",
+        "parameters": [
+          {
+            "name": "list",
+            "in": "query",
+            "description": "The category of the top list to retrieve.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "open",
+              "enum": [
+                "open",
+                "men_rapid",
+                "men_blitz",
+                "women",
+                "women_rapid",
+                "women_blitz",
+                "juniors",
+                "juniors_rapid",
+                "juniors_blitz",
+                "girls",
+                "girls_rapid",
+                "girls_blitz"
+              ]
+            }
+          },
+          {
+            "name": "forceUpdate",
+            "in": "query",
+            "description": "Force a fresh scrape from the FIDE website and update the database cache.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": ["cache", "scrape"],
+                      "example": "cache"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TopListPlayer"
+                      }
+                    }
+                  },
+                  "required": ["source", "data"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "summary": "Get Player Profile",
+        "description": "Retrieve a player's official FIDE profile details (federation, title, current standard/rapid/blitz ratings, national/continental/world rankings).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "The official FIDE ID of the player.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1503014
+            }
+          },
+          {
+            "name": "forceUpdate",
+            "in": "query",
+            "description": "Force a fresh scrape from the FIDE website and update the database cache.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": ["cache", "scrape"],
+                      "example": "scrape"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Player"
+                    }
+                  },
+                  "required": ["source", "data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Missing or invalid FIDE ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile/history": {
+      "get": {
+        "summary": "Get Player Rating History",
+        "description": "Retrieve rating history points (standard, rapid, blitz ratings and number of games played per period) for the player.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "The official FIDE ID of the player.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1503014
+            }
+          },
+          {
+            "name": "forceUpdate",
+            "in": "query",
+            "description": "Force a fresh scrape from the FIDE website and update the database cache.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": ["cache", "scrape"],
+                      "example": "cache"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RatingHistoryPoint"
+                      }
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2026-07-02T22:30:15.000Z"
+                    }
+                  },
+                  "required": ["source", "data", "updatedAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Missing or invalid FIDE ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile/stats": {
+      "get": {
+        "summary": "Get Player Game Statistics",
+        "description": "Retrieve comprehensive win/loss/draw game statistics split by piece color (White vs. Black) and format (Standard, Rapid, Blitz) for the player.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "The official FIDE ID of the player.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1503014
+            }
+          },
+          {
+            "name": "forceUpdate",
+            "in": "query",
+            "description": "Force a fresh scrape from the FIDE website and update the database cache.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": ["cache", "scrape"],
+                      "example": "scrape"
+                    },
+                    "data": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/PlayerStats"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updatedAt": {
+                      "type": ["string", "null"],
+                      "format": "date-time",
+                      "example": "2026-07-02T22:30:15.000Z"
+                    }
+                  },
+                  "required": ["source", "data", "updatedAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Missing or invalid FIDE ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Invalid player FIDE ID"
+          }
+        },
+        "required": ["error"]
+      },
+      "TopListPlayer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a3b4c5d6-e7f8-9012-3456-7890abcdef12"
+          },
+          "listType": {
+            "type": "string",
+            "example": "open"
+          },
+          "rank": {
+            "type": "integer",
+            "example": 1
+          },
+          "fideId": {
+            "type": "integer",
+            "example": 1503014
+          },
+          "name": {
+            "type": "string",
+            "example": "Carlsen, Magnus"
+          },
+          "fed": {
+            "type": ["string", "null"],
+            "example": "NOR"
+          },
+          "rating": {
+            "type": "integer",
+            "example": 2882
+          },
+          "bYear": {
+            "type": ["integer", "null"],
+            "example": 1990
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-02T22:30:15.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-02T22:30:15.000Z"
+          }
+        },
+        "required": ["id", "listType", "rank", "fideId", "name", "rating", "createdAt", "updatedAt"]
+      },
+      "Player": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "FIDE ID",
+            "example": 1503014
+          },
+          "name": {
+            "type": "string",
+            "example": "Carlsen, Magnus"
+          },
+          "federation": {
+            "type": ["string", "null"],
+            "example": "NOR"
+          },
+          "birthYear": {
+            "type": ["integer", "null"],
+            "example": 1990
+          },
+          "gender": {
+            "type": ["string", "null"],
+            "example": "O"
+          },
+          "title": {
+            "type": ["string", "null"],
+            "example": "GM"
+          },
+          "stdRating": {
+            "type": ["integer", "null"],
+            "example": 2882
+          },
+          "rapidRating": {
+            "type": ["integer", "null"],
+            "example": 2823
+          },
+          "blitzRating": {
+            "type": ["integer", "null"],
+            "example": 2896
+          },
+          "worldRankActive": {
+            "type": ["integer", "null"],
+            "example": 1
+          },
+          "worldRankAll": {
+            "type": ["integer", "null"],
+            "example": 1
+          },
+          "nationalRankActive": {
+            "type": ["integer", "null"],
+            "example": 1
+          },
+          "nationalRankAll": {
+            "type": ["integer", "null"],
+            "example": 1
+          },
+          "continentRankActive": {
+            "type": ["integer", "null"],
+            "example": 1
+          },
+          "continentRankAll": {
+            "type": ["integer", "null"],
+            "example": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-02T22:30:15.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-02T22:30:15.000Z"
+          }
+        },
+        "required": ["id", "name", "createdAt", "updatedAt"]
+      },
+      "RatingHistoryPoint": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "Period identifier (e.g. 'Month Year')",
+            "example": "Jan 2024"
+          },
+          "rating": {
+            "type": ["integer", "null"],
+            "description": "Standard rating during this period",
+            "example": 2882
+          },
+          "games": {
+            "type": ["integer", "null"],
+            "description": "Standard games played in this period",
+            "example": 9
+          },
+          "rapidRating": {
+            "type": ["integer", "null"],
+            "description": "Rapid rating during this period",
+            "example": 2823
+          },
+          "rapidGames": {
+            "type": ["integer", "null"],
+            "description": "Rapid games played in this period",
+            "example": 0
+          },
+          "blitzRating": {
+            "type": ["integer", "null"],
+            "description": "Blitz rating during this period",
+            "example": 2896
+          },
+          "blitzGames": {
+            "type": ["integer", "null"],
+            "description": "Blitz games played in this period",
+            "example": 12
+          }
+        },
+        "required": ["period"]
+      },
+      "PlayerStats": {
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "integer",
+            "example": 1503014
+          },
+          "whiteTotal": {
+            "type": "integer",
+            "example": 1240
+          },
+          "whiteWinNum": {
+            "type": "integer",
+            "example": 642
+          },
+          "whiteDrawNum": {
+            "type": "integer",
+            "example": 458
+          },
+          "blackTotal": {
+            "type": "integer",
+            "example": 1256
+          },
+          "blackWinNum": {
+            "type": "integer",
+            "example": 521
+          },
+          "blackDrawNum": {
+            "type": "integer",
+            "example": 512
+          },
+          "whiteTotalStd": {
+            "type": "integer",
+            "example": 720
+          },
+          "whiteWinNumStd": {
+            "type": "integer",
+            "example": 310
+          },
+          "whiteDrawNumStd": {
+            "type": "integer",
+            "example": 320
+          },
+          "blackTotalStd": {
+            "type": "integer",
+            "example": 728
+          },
+          "blackWinNumStd": {
+            "type": "integer",
+            "example": 240
+          },
+          "blackDrawNumStd": {
+            "type": "integer",
+            "example": 350
+          },
+          "whiteTotalRpd": {
+            "type": "integer",
+            "example": 220
+          },
+          "whiteWinNumRpd": {
+            "type": "integer",
+            "example": 132
+          },
+          "whiteDrawNumRpd": {
+            "type": "integer",
+            "example": 68
+          },
+          "blackTotalRpd": {
+            "type": "integer",
+            "example": 228
+          },
+          "blackWinNumRpd": {
+            "type": "integer",
+            "example": 111
+          },
+          "blackDrawNumRpd": {
+            "type": "integer",
+            "example": 82
+          },
+          "whiteTotalBlz": {
+            "type": "integer",
+            "example": 300
+          },
+          "whiteWinNumBlz": {
+            "type": "integer",
+            "example": 200
+          },
+          "whiteDrawNumBlz": {
+            "type": "integer",
+            "example": 70
+          },
+          "blackTotalBlz": {
+            "type": "integer",
+            "example": 300
+          },
+          "blackWinNumBlz": {
+            "type": "integer",
+            "example": 170
+          },
+          "blackDrawNumBlz": {
+            "type": "integer",
+            "example": 80
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-02T22:30:15.000Z"
+          }
+        },
+        "required": [
+          "playerId",
+          "whiteTotal",
+          "whiteWinNum",
+          "whiteDrawNum",
+          "blackTotal",
+          "blackWinNum",
+          "blackDrawNum",
+          "whiteTotalStd",
+          "whiteWinNumStd",
+          "whiteDrawNumStd",
+          "blackTotalStd",
+          "blackWinNumStd",
+          "blackDrawNumStd",
+          "whiteTotalRpd",
+          "whiteWinNumRpd",
+          "whiteDrawNumRpd",
+          "blackTotalRpd",
+          "blackWinNumRpd",
+          "blackDrawNumRpd",
+          "whiteTotalBlz",
+          "whiteWinNumBlz",
+          "whiteDrawNumBlz",
+          "blackTotalBlz",
+          "blackWinNumBlz",
+          "blackDrawNumBlz",
+          "updatedAt"
+        ]
+      }
+    }
+  }
+}
