@@ -212,6 +212,34 @@ export default function Home() {
     }
   }
 
+  const syncHistory = async (fideId: number) => {
+    setHistoryStatus('loading')
+    try {
+      const res = await fetch(`/api/profile/history?id=${fideId}&forceUpdate=true`)
+      const data = (await res.json()) as any
+      if (data.error) throw new Error(data.error)
+      setPlayerHistory(data.data || [])
+      setHistoryUpdatedAt(data.updatedAt || new Date().toISOString())
+      setHistoryStatus('loaded')
+    } catch (err: any) {
+      setHistoryStatus('error')
+    }
+  }
+
+  const syncStats = async (fideId: number) => {
+    setStatsStatus('loading')
+    try {
+      const res = await fetch(`/api/profile/stats?id=${fideId}&forceUpdate=true`)
+      const data = (await res.json()) as any
+      if (data.error) throw new Error(data.error)
+      setPlayerStats(data.data || null)
+      setStatsUpdatedAt(data.updatedAt || new Date().toISOString())
+      setStatsStatus('loaded')
+    } catch (err: any) {
+      setStatsStatus('error')
+    }
+  }
+
   useEffect(() => {
     fetchList(selectedList)
   }, [selectedList])
@@ -615,7 +643,7 @@ export default function Home() {
                     <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">There was an issue fetching the player's rating history.</p>
                   </div>
                   <button
-                    onClick={() => fetchPlayerDetail(playerDetail.id, true)}
+                    onClick={() => syncHistory(playerDetail.id)}
                     className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl transition-all cursor-pointer"
                   >
                     Retry Fetching
@@ -639,7 +667,7 @@ export default function Home() {
                         </div>
                       )}
                       <button
-                        onClick={() => fetchPlayerDetail(playerDetail.id, true)}
+                        onClick={() => syncHistory(playerDetail.id)}
                         title="Force Update History"
                         className="p-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
                       >
@@ -730,8 +758,25 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 text-center text-zinc-600 text-sm">
-                  No progress history data available.
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[240px] space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-zinc-900/50 flex items-center justify-center mx-auto text-zinc-500 border border-zinc-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 text-zinc-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.008 1.24l.885 1.77a2.25 2.25 0 0 0 2.007 1.24h1.98a2.25 2.25 0 0 0 2.007-1.24l.885-1.77a2.25 2.25 0 0 1 2.007-1.24h3.86m-18 0h18M12 9V3m0 0 3 3m-3-3-3 3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-zinc-300">No Rating History Available</h4>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">Rating history data has not been synchronized for this player yet.</p>
+                  </div>
+                  <button
+                    onClick={() => syncHistory(playerDetail.id)}
+                    className="px-4 py-2 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-zinc-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-950/20 transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Sync History
+                  </button>
                 </div>
               )}
 
@@ -755,7 +800,7 @@ export default function Home() {
                     <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">There was an issue fetching the player's game stats.</p>
                   </div>
                   <button
-                    onClick={() => fetchPlayerDetail(playerDetail.id, true)}
+                    onClick={() => syncStats(playerDetail.id)}
                     className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-semibold rounded-xl transition-all cursor-pointer"
                   >
                     Retry Fetching
@@ -772,7 +817,7 @@ export default function Home() {
                         </span>
                       )}
                       <button
-                        onClick={() => fetchPlayerDetail(playerDetail.id, true)}
+                        onClick={() => syncStats(playerDetail.id)}
                         title="Force Update Stats"
                         className="p-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
                       >
@@ -859,8 +904,26 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 text-center text-zinc-600 text-sm">
-                  No stats history data available.
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-zinc-900/50 flex items-center justify-center mx-auto text-zinc-500 border border-zinc-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 text-zinc-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-zinc-300">No Game Stats Available</h4>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">No game statistics are available/synced for this player.</p>
+                  </div>
+                  <button
+                    onClick={() => syncStats(playerDetail.id)}
+                    className="px-4 py-2 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-zinc-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-950/20 transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Sync Stats
+                  </button>
                 </div>
               )}
 
