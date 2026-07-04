@@ -5,6 +5,7 @@ import { Header } from "@/components/Header"
 import { RankingList, ListPlayer } from "@/components/RankingList"
 import { PlayerProfileCard, PlayerDetail } from "@/components/PlayerProfileCard"
 import { ListType } from "@/lib/enums"
+import { SyncPasswordDialog } from "@/components/SyncPasswordDialog"
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
@@ -22,17 +23,17 @@ export default function Home() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
 
+  const [syncPrompt, setSyncPrompt] = useState<{
+    title: string
+    description: string
+    onSubmit: (password: string) => void
+  } | null>(null)
+
   // Load top list
-  const fetchList = async (listName: string, force = false) => {
+  const fetchList = async (listName: string, force = false, password?: string) => {
     let passwordParam = ""
-    if (force && players.length > 0 && players[0].updatedAt) {
-      const lastSynced = new Date(players[0].updatedAt).getTime()
-      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
-      if (isRecent) {
-        const pw = prompt("This list was synced less than 10 minutes ago. Please enter the sync password to force update:")
-        if (pw === null) return // user cancelled
-        passwordParam = `&password=${encodeURIComponent(pw)}`
-      }
+    if (password) {
+      passwordParam = `&password=${encodeURIComponent(password)}`
     }
 
     setListLoading(true)
@@ -55,16 +56,10 @@ export default function Home() {
   }
 
   // Load player details
-  const fetchPlayerDetail = async (fideId: number, force = false) => {
+  const fetchPlayerDetail = async (fideId: number, force = false, password?: string) => {
     let passwordParam = ""
-    if (force && playerDetail && playerDetail.id === fideId && playerDetail.updatedAt) {
-      const lastSynced = new Date(playerDetail.updatedAt).getTime()
-      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
-      if (isRecent) {
-        const pw = prompt("This profile was synced less than 10 minutes ago. Please enter the sync password to force update:")
-        if (pw === null) return // user cancelled
-        passwordParam = `&password=${encodeURIComponent(pw)}`
-      }
+    if (password) {
+      passwordParam = `&password=${encodeURIComponent(password)}`
     }
 
     setDetailLoading(true)
@@ -81,6 +76,42 @@ export default function Home() {
     } finally {
       setDetailLoading(false)
     }
+  }
+
+  const handleForceSyncList = () => {
+    if (players.length > 0 && players[0].updatedAt) {
+      const lastSynced = new Date(players[0].updatedAt).getTime()
+      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+      if (isRecent) {
+        setSyncPrompt({
+          title: "Force Sync List",
+          description: "This list was synced less than 10 minutes ago. Please enter the sync password to force update:",
+          onSubmit: (pw) => {
+            fetchList(selectedList, true, pw)
+          }
+        })
+        return
+      }
+    }
+    fetchList(selectedList, true)
+  }
+
+  const handleForceSyncPlayer = () => {
+    if (selectedPlayerId && playerDetail && playerDetail.id === selectedPlayerId && playerDetail.updatedAt) {
+      const lastSynced = new Date(playerDetail.updatedAt).getTime()
+      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+      if (isRecent) {
+        setSyncPrompt({
+          title: "Force Sync Profile",
+          description: "This profile was synced less than 10 minutes ago. Please enter the sync password to force update:",
+          onSubmit: (pw) => {
+            if (selectedPlayerId) fetchPlayerDetail(selectedPlayerId, true, pw)
+          }
+        })
+        return
+      }
+    }
+    if (selectedPlayerId) fetchPlayerDetail(selectedPlayerId, true)
   }
 
   useEffect(() => {
@@ -109,7 +140,7 @@ export default function Home() {
             players={players}
             listLoading={listLoading}
             listError={listError}
-            onForceSync={() => fetchList(selectedList, true)}
+            onForceSync={handleForceSyncList}
             selectedPlayerId={selectedPlayerId}
             setSelectedPlayerId={setSelectedPlayerId}
             mounted={mounted}
@@ -130,7 +161,7 @@ export default function Home() {
           <PlayerProfileCard
             playerDetail={playerDetail}
             detailLoading={detailLoading}
-            onForceSync={() => selectedPlayerId && fetchPlayerDetail(selectedPlayerId, true)}
+            onForceSync={handleForceSyncPlayer}
             mounted={mounted}
             showLinkToDetails={true}
           />
@@ -141,6 +172,14 @@ export default function Home() {
       <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground font-semibold">
         <p>© 2026 cassiofernando. Built with Next.js, Drizzle ORM &amp; Cloudflare D1.</p>
       </footer>
+
+      <SyncPasswordDialog
+        isOpen={syncPrompt !== null}
+        onClose={() => setSyncPrompt(null)}
+        title={syncPrompt?.title}
+        description={syncPrompt?.description}
+        onSubmit={syncPrompt?.onSubmit || (() => {})}
+      />
     </div>
   )
 }

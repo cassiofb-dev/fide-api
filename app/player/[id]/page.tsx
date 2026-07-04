@@ -7,6 +7,7 @@ import { Header } from "@/components/Header"
 import { PlayerProfileCard, PlayerDetail } from "@/components/PlayerProfileCard"
 import { HistoryChart, PlayerChart } from "@/components/HistoryChart"
 import { StatsCard, PlayerStats } from "@/components/StatsCard"
+import { SyncPasswordDialog } from "@/components/SyncPasswordDialog"
 
 export default function PlayerPage() {
   const params = useParams()
@@ -31,16 +32,16 @@ export default function PlayerPage() {
   const [historyUpdatedAt, setHistoryUpdatedAt] = useState<string | null>(null)
   const [statsUpdatedAt, setStatsUpdatedAt] = useState<string | null>(null)
 
-  const fetchPlayerDetail = async (id: number, force = false) => {
+  const [syncPrompt, setSyncPrompt] = useState<{
+    title: string
+    description: string
+    onSubmit: (password: string) => void
+  } | null>(null)
+
+  const fetchPlayerDetail = async (id: number, force = false, password?: string) => {
     let passwordParam = ""
-    if (force && playerDetail && playerDetail.id === id && playerDetail.updatedAt) {
-      const lastSynced = new Date(playerDetail.updatedAt).getTime()
-      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
-      if (isRecent) {
-        const pw = prompt("This profile was synced less than 10 minutes ago. Please enter the sync password to force update:")
-        if (pw === null) return // user cancelled
-        passwordParam = `&password=${encodeURIComponent(pw)}`
-      }
+    if (password) {
+      passwordParam = `&password=${encodeURIComponent(password)}`
     }
 
     setDetailLoading(true)
@@ -69,16 +70,10 @@ export default function PlayerPage() {
     }
   }
 
-  const syncHistory = async (id: number) => {
+  const syncHistory = async (id: number, password?: string) => {
     let passwordParam = ""
-    if (historyUpdatedAt) {
-      const lastSynced = new Date(historyUpdatedAt).getTime()
-      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
-      if (isRecent) {
-        const pw = prompt("This rating history was synced less than 10 minutes ago. Please enter the sync password to force update:")
-        if (pw === null) return // user cancelled
-        passwordParam = `&password=${encodeURIComponent(pw)}`
-      }
+    if (password) {
+      passwordParam = `&password=${encodeURIComponent(password)}`
     }
 
     setHistoryStatus("loading")
@@ -94,16 +89,10 @@ export default function PlayerPage() {
     }
   }
 
-  const syncStats = async (id: number) => {
+  const syncStats = async (id: number, password?: string) => {
     let passwordParam = ""
-    if (statsUpdatedAt) {
-      const lastSynced = new Date(statsUpdatedAt).getTime()
-      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
-      if (isRecent) {
-        const pw = prompt("These stats were synced less than 10 minutes ago. Please enter the sync password to force update:")
-        if (pw === null) return // user cancelled
-        passwordParam = `&password=${encodeURIComponent(pw)}`
-      }
+    if (password) {
+      passwordParam = `&password=${encodeURIComponent(password)}`
     }
 
     setStatsStatus("loading")
@@ -116,6 +105,60 @@ export default function PlayerPage() {
       setStatsStatus("loaded")
     } catch (err: any) {
       setStatsStatus("error")
+    }
+  }
+
+  const handleForceSyncProfile = () => {
+    if (!isNaN(fideId)) {
+      if (playerDetail && playerDetail.id === fideId && playerDetail.updatedAt) {
+        const lastSynced = new Date(playerDetail.updatedAt).getTime()
+        const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+        if (isRecent) {
+          setSyncPrompt({
+            title: "Force Sync Profile",
+            description: "This profile was synced less than 10 minutes ago. Please enter the sync password to force update:",
+            onSubmit: (pw) => fetchPlayerDetail(fideId, true, pw),
+          })
+          return
+        }
+      }
+      fetchPlayerDetail(fideId, true)
+    }
+  }
+
+  const handleSyncHistory = () => {
+    if (!isNaN(fideId)) {
+      if (historyUpdatedAt) {
+        const lastSynced = new Date(historyUpdatedAt).getTime()
+        const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+        if (isRecent) {
+          setSyncPrompt({
+            title: "Force Sync History",
+            description: "This rating history was synced less than 10 minutes ago. Please enter the sync password to force update:",
+            onSubmit: (pw) => syncHistory(fideId, pw),
+          })
+          return
+        }
+      }
+      syncHistory(fideId)
+    }
+  }
+
+  const handleSyncStats = () => {
+    if (!isNaN(fideId)) {
+      if (statsUpdatedAt) {
+        const lastSynced = new Date(statsUpdatedAt).getTime()
+        const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+        if (isRecent) {
+          setSyncPrompt({
+            title: "Force Sync Stats",
+            description: "These stats were synced less than 10 minutes ago. Please enter the sync password to force update:",
+            onSubmit: (pw) => syncStats(fideId, pw),
+          })
+          return
+        }
+      }
+      syncStats(fideId)
     }
   }
 
@@ -164,7 +207,7 @@ export default function PlayerPage() {
         <PlayerProfileCard
           playerDetail={playerDetail}
           detailLoading={detailLoading}
-          onForceSync={() => !isNaN(fideId) && fetchPlayerDetail(fideId, true)}
+          onForceSync={handleForceSyncProfile}
           mounted={mounted}
           showLinkToDetails={false}
         />
@@ -177,7 +220,7 @@ export default function PlayerPage() {
               playerHistory={playerHistory}
               historyStatus={historyStatus}
               historyUpdatedAt={historyUpdatedAt}
-              onSyncHistory={() => syncHistory(fideId)}
+              onSyncHistory={handleSyncHistory}
               mounted={mounted}
             />
 
@@ -186,7 +229,7 @@ export default function PlayerPage() {
               playerStats={playerStats}
               statsStatus={statsStatus}
               statsUpdatedAt={statsUpdatedAt}
-              onSyncStats={() => syncStats(fideId)}
+              onSyncStats={handleSyncStats}
               mounted={mounted}
             />
           </div>
@@ -196,6 +239,14 @@ export default function PlayerPage() {
       <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground font-semibold">
         <p>© 2026 cassiofernando. Built with Next.js, Drizzle ORM &amp; Cloudflare D1.</p>
       </footer>
+
+      <SyncPasswordDialog
+        isOpen={syncPrompt !== null}
+        onClose={() => setSyncPrompt(null)}
+        title={syncPrompt?.title}
+        description={syncPrompt?.description}
+        onSubmit={syncPrompt?.onSubmit || (() => {})}
+      />
     </div>
   )
 }
