@@ -25,20 +25,20 @@ export const metadata: Metadata = {
 		siteName: "FIDE Ratings Tracker",
 		images: [
 			{
-				url: "/favicon.svg",
-				width: 512,
-				height: 512,
-				alt: "FIDE Ratings Tracker Logo",
+				url: "https://res.cloudinary.com/dfgecuoqu/image/upload/v1783208902/ChatGPT_Image_4_de_jul._de_2026_20_47_53_wftiws.jpg",
+				width: 1200,
+				height: 630,
+				alt: "FIDE Ratings Tracker & Chess Statistics API Preview",
 			},
 		],
 		locale: "en_US",
 		type: "website",
 	},
 	twitter: {
-		card: "summary",
+		card: "summary_large_image",
 		title: "FIDE Ratings Tracker & Chess Statistics API",
 		description: "Track, scrape, and search official FIDE chess ratings, player profiles, rating history charts, and game statistics.",
-		images: ["/favicon.svg"],
+		images: ["https://res.cloudinary.com/dfgecuoqu/image/upload/v1783208902/ChatGPT_Image_4_de_jul._de_2026_20_47_53_wftiws.jpg"],
 	},
 };
 
