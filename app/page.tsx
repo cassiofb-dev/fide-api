@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import { Header } from "@/components/Header"
 import { RankingList, ListPlayer } from "@/components/RankingList"
 import { PlayerProfileCard, PlayerDetail } from "@/components/PlayerProfileCard"
+import { ListType } from "@/lib/enums"
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
@@ -11,7 +12,7 @@ export default function Home() {
     setMounted(true)
   }, [])
 
-  const [selectedList, setSelectedList] = useState("open")
+  const [selectedList, setSelectedList] = useState<string>(ListType.OPEN)
   const [players, setPlayers] = useState<ListPlayer[]>([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)

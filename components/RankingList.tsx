@@ -2,6 +2,8 @@
 
 import React from "react"
 
+import { ListType } from "@/lib/enums"
+
 export interface ListPlayer {
   rank: number
   fideId: number
@@ -13,19 +15,20 @@ export interface ListPlayer {
 }
 
 const LIST_OPTIONS = [
-  { label: "Open (Standard)", value: "open" },
-  { label: "Open (Rapid)", value: "men_rapid" },
-  { label: "Open (Blitz)", value: "men_blitz" },
-  { label: "Women (Standard)", value: "women" },
-  { label: "Women (Rapid)", value: "women_rapid" },
-  { label: "Women (Blitz)", value: "women_blitz" },
-  { label: "Juniors (Standard)", value: "juniors" },
-  { label: "Juniors (Rapid)", value: "juniors_rapid" },
-  { label: "Juniors (Blitz)", value: "juniors_blitz" },
-  { label: "Girls (Standard)", value: "girls" },
-  { label: "Girls (Rapid)", value: "girls_rapid" },
-  { label: "Girls (Blitz)", value: "girls_blitz" },
+  { label: "Open (Standard)", value: ListType.OPEN },
+  { label: "Open (Rapid)", value: ListType.MEN_RAPID },
+  { label: "Open (Blitz)", value: ListType.MEN_BLITZ },
+  { label: "Women (Standard)", value: ListType.WOMEN },
+  { label: "Women (Rapid)", value: ListType.WOMEN_RAPID },
+  { label: "Women (Blitz)", value: ListType.WOMEN_BLITZ },
+  { label: "Juniors (Standard)", value: ListType.JUNIORS },
+  { label: "Juniors (Rapid)", value: ListType.JUNIORS_RAPID },
+  { label: "Juniors (Blitz)", value: ListType.JUNIORS_BLITZ },
+  { label: "Girls (Standard)", value: ListType.GIRLS },
+  { label: "Girls (Rapid)", value: ListType.GIRLS_RAPID },
+  { label: "Girls (Blitz)", value: ListType.GIRLS_BLITZ },
 ]
+
 
 interface RankingListProps {
   selectedList: string
