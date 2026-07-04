@@ -119,6 +119,16 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "full",
+            "in": "query",
+            "description": "If true, retrieves the complete player profile along with rating history and game statistics all at the same time.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -135,7 +145,10 @@
                       "example": "scrape"
                     },
                     "data": {
-                      "$ref": "#/components/schemas/Player"
+                      "oneOf": [
+                        { "$ref": "#/components/schemas/Player" },
+                        { "$ref": "#/components/schemas/FullPlayer" }
+                      ]
                     }
                   },
                   "required": ["source", "data"]
@@ -447,6 +460,30 @@
           }
         },
         "required": ["id", "name", "createdAt", "updatedAt"]
+      },
+      "FullPlayer": {
+        "type": "object",
+        "allOf": [
+          { "$ref": "#/components/schemas/Player" },
+          {
+            "type": "object",
+            "properties": {
+              "charts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RatingHistoryPoint"
+                }
+              },
+              "stats": {
+                "oneOf": [
+                  { "$ref": "#/components/schemas/PlayerStats" },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "required": ["charts", "stats"]
+          }
+        ]
       },
       "RatingHistoryPoint": {
         "type": "object",

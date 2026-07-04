@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const idStr = searchParams.get('id')
   const forceUpdate = searchParams.get('forceUpdate') === 'true'
+  const full = searchParams.get('full') === 'true'
 
   if (!idStr) {
     return NextResponse.json({ error: 'Missing player FIDE ID' }, { status: 400 })
@@ -23,10 +24,10 @@ export async function GET(request: Request) {
     // 1. Fetch cached player
     const player = await db.query.players.findFirst({
       where: (players, { eq }) => eq(players.id, fideId),
-      with: {
+      with: full ? {
         chart: true,
         stats: true,
-      }
+      } : undefined
     })
 
     if (player) {
@@ -40,30 +41,105 @@ export async function GET(request: Request) {
           )
         }
       } else {
+        // Return cached player. Format charts and stats if full is requested.
         return NextResponse.json({
           source: 'cache',
-          data: {
+          data: full ? {
             ...player,
-            charts: player.chart ? JSON.parse(player.chart.data) : [],
-            stats: player.stats || null,
-          }
+            charts: (player as any).chart ? JSON.parse((player as any).chart.data) : [],
+            stats: (player as any).stats || null,
+          } : player
         })
       }
     }
 
-    // 2. Scrape player details, history, and stats in parallel
-    const [profile, history, stats] = await Promise.all([
-      scrapePlayerProfile(fideId),
-      scrapePlayerHistory(fideId),
-      scrapePlayerStats(fideId)
-    ])
+    if (full) {
+      // 2. Scrape player details, history, and stats in parallel
+      const [profile, history, stats] = await Promise.all([
+        scrapePlayerProfile(fideId),
+        scrapePlayerHistory(fideId),
+        scrapePlayerStats(fideId)
+      ])
 
-    // 3. Save to database using D1 Batch API
-    const now = new Date().toISOString()
-    const { charts, stats: _, ...profileData } = profile
+      const now = new Date().toISOString()
+      const { charts: _, stats: __, ...profileData } = profile
 
-    await db.batch([
-      db.insert(players)
+      // 3. Save to database using D1 Batch API
+      await db.batch([
+        db.insert(players)
+          .values({
+            ...profileData,
+            updatedAt: now,
+          })
+          .onConflictDoUpdate({
+            target: players.id,
+            set: {
+              ...profileData,
+              updatedAt: now,
+            }
+          }),
+        db.insert(playerCharts)
+          .values({
+            playerId: fideId,
+            data: JSON.stringify(history),
+            updatedAt: now,
+          })
+          .onConflictDoUpdate({
+            target: playerCharts.playerId,
+            set: {
+              data: JSON.stringify(history),
+              updatedAt: now,
+            }
+          }),
+        ...(stats
+          ? [
+              db.insert(playerStats)
+                .values({
+                  playerId: fideId,
+                  ...stats,
+                  updatedAt: now,
+                })
+                .onConflictDoUpdate({
+                  target: playerStats.playerId,
+                  set: {
+                    ...stats,
+                    updatedAt: now,
+                  }
+                })
+            ]
+          : [
+              db.delete(playerStats).where(eq(playerStats.playerId, fideId))
+            ])
+      ])
+
+      // Retrieve complete relational record
+      const savedPlayer = await db.query.players.findFirst({
+        where: (players, { eq }) => eq(players.id, fideId),
+        with: {
+          chart: true,
+          stats: true,
+        }
+      })
+
+      if (!savedPlayer) {
+        throw new Error('Failed to retrieve player after saving')
+      }
+
+      return NextResponse.json({
+        source: 'scrape',
+        data: {
+          ...savedPlayer,
+          charts: savedPlayer.chart ? JSON.parse(savedPlayer.chart.data) : [],
+          stats: savedPlayer.stats || null,
+        }
+      })
+    } else {
+      // Scrape ONLY player profile
+      const profile = await scrapePlayerProfile(fideId)
+      const now = new Date().toISOString()
+      const { charts: _, stats: __, ...profileData } = profile
+
+      await db.insert(players)
         .values({
           ...profileData,
           updatedAt: now,
@@ -74,62 +150,21 @@ export async function GET(request: Request) {
             ...profileData,
             updatedAt: now,
           }
-        }),
-      db.insert(playerCharts)
-        .values({
-          playerId: fideId,
-          data: JSON.stringify(history),
-          updatedAt: now,
         })
-        .onConflictDoUpdate({
-          target: playerCharts.playerId,
-          set: {
-            data: JSON.stringify(history),
-            updatedAt: now,
-          }
-        }),
-      ...(stats
-        ? [
-            db.insert(playerStats)
-              .values({
-                playerId: fideId,
-                ...stats,
-                updatedAt: now,
-              })
-              .onConflictDoUpdate({
-                target: playerStats.playerId,
-                set: {
-                  ...stats,
-                  updatedAt: now,
-                }
-              })
-          ]
-        : [
-            db.delete(playerStats).where(eq(playerStats.playerId, fideId))
-          ])
-    ])
 
-    // 4. Retrieve complete relational record
-    const savedPlayer = await db.query.players.findFirst({
-      where: (players, { eq }) => eq(players.id, fideId),
-      with: {
-        chart: true,
-        stats: true,
+      const savedPlayer = await db.query.players.findFirst({
+        where: (players, { eq }) => eq(players.id, fideId),
+      })
+
+      if (!savedPlayer) {
+        throw new Error('Failed to retrieve player after saving')
       }
-    })
 
-    if (!savedPlayer) {
-      throw new Error('Failed to retrieve player after saving')
+      return NextResponse.json({
+        source: 'scrape',
+        data: savedPlayer
+      })
     }
-
-    return NextResponse.json({
-      source: 'scrape',
-      data: {
-        ...savedPlayer,
-        charts: savedPlayer.chart ? JSON.parse(savedPlayer.chart.data) : [],
-        stats: savedPlayer.stats || null,
-      }
-    })
   } catch (error: any) {
     console.error(`Error in /api/profile for ID ${fideId}:`, error)
     return NextResponse.json(

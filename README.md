@@ -7,16 +7,45 @@ A modern Next.js application designed to scrape and display top chess players' r
 - **Deployment & Hosting**: Cloudflare Pages
 - **Database**: Cloudflare D1 (SQLite)
 - **ORM**: Drizzle ORM
+- **Styling**: Tailwind CSS v4, shadcn & base-ui primitives
 - **Package Manager**: pnpm
+
+---
+
+## Project Structure & Architecture
+
+The application is structured into modular client-side React components and page routes:
+
+### Core Components
+- `ThemeProvider.tsx`: Handles theme context state, storage persistence, and early SSR injection.
+- `ThemeSwitcher.tsx`: Stylized theme switcher placed in the header to easily swap layouts.
+- `Header.tsx`: Exposes app branding, page navigation, responsive search input, and theme controllers.
+- `RankingList.tsx`: Rankings categories selection, cache metadata sync, and standard ranking tables.
+- `PlayerProfileCard.tsx`: Display for standard, rapid, and blitz ratings, ranks, and sync utility.
+- `HistoryChart.tsx`: Ratings progress chart over time powered by Recharts.
+- `StatsCard.tsx`: Game statistics split by White vs Black, support standard, rapid, blitz filters.
+
+### Pages & Routes
+- **Homepage (`/`)**: Displays the rankings category selector, player search, and the selected player's **Profile Details** (name, country, rating numbers, FIDE ranks).
+- **Player Details (`/player/[id]`)**: Dynamic route displaying the player's full profile cards, their **Rating History Chart**, and their **White/Black Game Statistics**.
+
+### Theme System
+The dashboard includes support for 6 theme variants:
+1. **Light Theme**: Standard clean light layout.
+2. **Dark Theme**: Sleek dark interface.
+3. **Catppuccin Latte**: Warm light pastel theme.
+4. **Catppuccin Frappé**: Soft dark pastel variant.
+5. **Catppuccin Macchiato**: Medium dark pastel variant.
+6. **Catppuccin Mocha**: Deep dark pastel variant.
+
+Themes use CSS variables dynamically mapped in `app/globals.css`, ensuring Tailwind utilities adapt immediately on theme toggles.
 
 ---
 
 ## Getting Started
 
-Follow the steps below to configure your local development environment, set up the local D1 state, and run/deploy the project.
-
 ### 1. Prerequisites
-Make sure you have Node.js, `pnpm` installed, and a Cloudflare account setup.
+Make sure you have Node.js and `pnpm` installed.
 
 Install dependencies:
 ```bash
@@ -104,63 +133,13 @@ To enable automated deployments, configure the following secrets in your reposit
 
 ## API Documentation & Endpoints
 
-This project provides an interactive OpenAPI reference UI powered by [Scalar](https://github.com/scalar/scalar), as well as the raw OpenAPI specification.
-
-- **Interactive API Documentation**: [/docs](http://localhost:3000/docs) (when running locally)
+- **Interactive API Documentation**: [/docs](http://localhost:3000/docs) (powered by Scalar API Reference UI)
 - **OpenAPI 3.1 JSON Specification**: [/openapi.json](http://localhost:3000/openapi.json)
 
 ### API Endpoints
+All endpoints support database cache hits. If `forceUpdate=true` is provided, the backend scrapes fresh data from FIDE and updates D1 cache tables.
 
-All endpoints support caching and database upserts. If `forceUpdate=true` is provided, fresh scraper requests are sent to FIDE's website in parallel, and the database cache is updated.
-
-#### 1. Get Top Player List
-Retrieve the ranking list of the top 100 chess players across various categories.
-- **URL**: `/api/list`
-- **Method**: `GET`
-- **Query Parameters**:
-  - `list` (optional, default: `open`): The category list type. Available values:
-    - `open` (Standard Open), `men_rapid` (Rapid Open), `men_blitz` (Blitz Open)
-    - `women` (Standard Women), `women_rapid` (Rapid Women), `women_blitz` (Blitz Women)
-    - `juniors` (Standard Juniors), `juniors_rapid` (Rapid Juniors), `juniors_blitz` (Blitz Juniors)
-    - `girls` (Standard Girls), `girls_rapid` (Rapid Girls), `girls_blitz` (Blitz Girls)
-  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
-- **Example request**:
-  ```bash
-  curl "http://localhost:3000/api/list?list=open"
-  ```
-
-#### 2. Get Player Profile (Consolidated)
-Retrieve complete details, rating history charts, and game statistics for a player in a single request.
-- **URL**: `/api/profile`
-- **Method**: `GET`
-- **Query Parameters**:
-  - `id` (required): The official FIDE ID of the player (e.g. `1503014` for Magnus Carlsen).
-  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache, scrape fresh data in parallel on the server, and batch update the D1 database.
-- **Example request**:
-  ```bash
-  curl "http://localhost:3000/api/profile?id=1503014"
-  ```
-
-#### 3. Get Player Rating History (Legacy)
-Retrieve the chronological rating progress chart points for the player across standard, rapid, and blitz time controls.
-- **URL**: `/api/profile/history`
-- **Method**: `GET`
-- **Query Parameters**:
-  - `id` (required): The official FIDE ID of the player.
-  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
-- **Example request**:
-  ```bash
-  curl "http://localhost:3000/api/profile/history?id=1503014"
-  ```
-
-#### 4. Get Player Game Statistics (Legacy)
-Retrieve win/draw/loss counts split by color (White vs. Black) and format (Standard, Rapid, Blitz).
-- **URL**: `/api/profile/stats`
-- **Method**: `GET`
-- **Query Parameters**:
-  - `id` (required): The official FIDE ID of the player.
-  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
-- **Example request**:
-  ```bash
-  curl "http://localhost:3000/api/profile/stats?id=1503014"
-  ```
+1. **Get Top Player List**: `/api/list?list=open&forceUpdate=false`
+2. **Get Player Profile (Consolidated)**: `/api/profile?id={fideId}&forceUpdate=false`
+3. **Get Player Rating History (Legacy)**: `/api/profile/history?id={fideId}&forceUpdate=false`
+4. **Get Player Game Statistics (Legacy)**: `/api/profile/stats?id={fideId}&forceUpdate=false`
