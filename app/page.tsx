@@ -327,7 +327,8 @@ export default function Home() {
               <select
                 value={selectedList}
                 onChange={(e) => setSelectedList(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-zinc-700 text-zinc-300 font-medium"
+                disabled
+                className="w-full bg-zinc-900 border border-zinc-800 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-zinc-700 text-zinc-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {LIST_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
