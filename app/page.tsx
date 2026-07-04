@@ -2,6 +2,54 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts'
+
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: any[]
+  label?: string
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl shadow-2xl backdrop-blur-md">
+        <p className="text-xs font-semibold text-zinc-400 mb-1.5">{label}</p>
+        <div className="space-y-1">
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center gap-2 text-xs">
+              <span 
+                className="w-2 h-2 rounded-full" 
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-zinc-500 font-medium">{entry.name}:</span>
+              <span className="text-zinc-100 font-bold font-mono">{entry.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+  return null
+}
+
+const formatXAxisTick = (tickItem: string) => {
+  const parts = tickItem.split('-')
+  if (parts.length === 2) {
+    const yearShort = parts[0].substring(2)
+    return `${parts[1]} '${yearShort}`
+  }
+  return tickItem
+}
 
 interface ListPlayer {
   rank: number
@@ -203,50 +251,15 @@ export default function Home() {
       .sort((a, b) => parsePeriod(a.period).getTime() - parsePeriod(b.period).getTime())
   }, [playerHistory])
 
-  // Get SVG dimensions and coordinates
-  const svgParams = useMemo(() => {
+  // Get ratings range
+  const ratingRange = useMemo(() => {
     if (chartData.length === 0) return null
-    const ratings = chartData.map(c => c.rating).filter((r): r is number => r !== null)
+    const ratings = chartData.flatMap(c => [c.rating, c.rapidRating, c.blitzRating]).filter((r): r is number => r !== null)
     if (ratings.length === 0) return null
-
-    const minRating = Math.min(...ratings) - 40
-    const maxRating = Math.max(...ratings) + 40
-    const range = maxRating - minRating
-
-    const width = 600
-    const height = 240
-    const paddingLeft = 50
-    const paddingRight = 20
-    const paddingTop = 20
-    const paddingBottom = 40
-
-    const graphWidth = width - paddingLeft - paddingRight
-    const graphHeight = height - paddingTop - paddingBottom
-
-    const points = chartData.map((d, index) => {
-      const x = paddingLeft + (index / (chartData.length - 1)) * graphWidth
-      const y = paddingTop + graphHeight - (( (d.rating || minRating) - minRating) / range) * graphHeight
-      return { x, y, period: d.period, rating: d.rating }
-    })
-
-    // SVG path string
-    let path = ''
-    if (points.length > 0) {
-      path = `M ${points[0].x} ${points[0].y} `
-      for (let i = 1; i < points.length; i++) {
-        path += `L ${points[i].x} ${points[i].y} `
-      }
+    return {
+      min: Math.min(...ratings),
+      max: Math.max(...ratings)
     }
-
-    // Grid lines Y values
-    const gridLinesCount = 4
-    const gridLines = Array.from({ length: gridLinesCount + 1 }).map((_, i) => {
-      const ratingVal = Math.round(minRating + (i / gridLinesCount) * range)
-      const y = paddingTop + graphHeight - (i / gridLinesCount) * graphHeight
-      return { y, value: ratingVal }
-    })
-
-    return { width, height, points, path, gridLines, minRating, maxRating, paddingLeft, paddingTop, graphWidth, graphHeight }
   }, [chartData])
 
   // Parse Stats values
@@ -608,21 +621,23 @@ export default function Home() {
                     Retry Fetching
                   </button>
                 </div>
-              ) : svgParams ? (
+              ) : (mounted && chartData.length > 0) ? (
                 <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Rating History</h3>
-                      {mounted && historyUpdatedAt && (
+                      {historyUpdatedAt && (
                         <span className="text-[10px] text-amber-500/80 font-semibold bg-amber-500/5 px-2 py-0.5 rounded-md border border-amber-500/10">
                           Synced: {new Date(historyUpdatedAt).toLocaleString()}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="text-xs text-zinc-500 font-medium">
-                        Range: {svgParams.minRating + 40} – {svgParams.maxRating - 40}
-                      </div>
+                      {ratingRange && (
+                        <div className="text-xs text-zinc-500 font-medium">
+                          Range: {ratingRange.min} – {ratingRange.max}
+                        </div>
+                      )}
                       <button
                         onClick={() => fetchPlayerDetail(playerDetail.id, true)}
                         title="Force Update History"
@@ -635,116 +650,83 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="relative overflow-x-auto">
-                    <svg viewBox={`0 0 ${svgParams.width} ${svgParams.height}`} className="w-full h-auto text-zinc-800">
-                      <defs>
-                        {/* Area gradient */}
-                        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Grid Lines */}
-                      {svgParams.gridLines.map((line, idx) => (
-                        <g key={idx}>
-                          <line
-                            x1={svgParams.paddingLeft}
-                            y1={line.y}
-                            x2={svgParams.width - 20}
-                            y2={line.y}
-                            stroke="currentColor"
-                            strokeWidth="0.5"
-                            strokeDasharray="4 4"
-                            className="text-zinc-900"
-                          />
-                          <text
-                            x={svgParams.paddingLeft - 10}
-                            y={line.y + 4}
-                            textAnchor="end"
-                            fill="currentColor"
-                            className="text-[10px] text-zinc-500 font-medium font-mono"
-                          >
-                            {line.value}
-                          </text>
-                        </g>
-                      ))}
-
-                      {/* Area under the line */}
-                      {svgParams.points.length > 0 && (
-                        <path
-                          d={`${svgParams.path} L ${svgParams.points[svgParams.points.length - 1].x} ${svgParams.height - 40} L ${svgParams.points[0].x} ${svgParams.height - 40} Z`}
-                          fill="url(#areaGrad)"
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={chartData}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
+                        <XAxis 
+                          dataKey="period" 
+                          stroke="#52525b" 
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          dy={10}
+                          tickFormatter={formatXAxisTick}
+                          minTickGap={30}
                         />
-                      )}
-
-                      {/* The Main Line */}
-                      <path
-                        d={svgParams.path}
-                        fill="none"
-                        stroke="#f59e0b"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-
-                      {/* X axis labels (show first, middle, last to prevent overlap) */}
-                      {(() => {
-                        const count = svgParams.points.length
-                        if (count === 0) return null
-                        const indicesToShow = count <= 5 
-                          ? Array.from({ length: count }).map((_, i) => i) 
-                          : [0, Math.floor(count * 0.25), Math.floor(count * 0.5), Math.floor(count * 0.75), count - 1]
-
-                        return indicesToShow.map((i) => {
-                          const pt = svgParams.points[i]
-                          if (!pt) return null
-                          return (
-                            <g key={i}>
-                              <line
-                                x1={pt.x}
-                                y1={svgParams.height - 40}
-                                x2={pt.x}
-                                y2={svgParams.height - 35}
-                                stroke="currentColor"
-                                strokeWidth="1"
-                                className="text-zinc-700"
-                              />
-                              <text
-                                x={pt.x}
-                                y={svgParams.height - 18}
-                                textAnchor="middle"
-                                fill="currentColor"
-                                className="text-[10px] text-zinc-500 font-medium font-sans rotate-12 origin-center"
-                              >
-                                {pt.period}
-                              </text>
-                            </g>
-                          )
-                        })
-                      })()}
-
-                      {/* Data Point Dots on hover */}
-                      {svgParams.points.map((pt, i) => (
-                        <g key={i} className="group/dot cursor-pointer">
-                          <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r="4"
-                            fill="#f59e0b"
-                            className="transition-all group-hover/dot:r-6"
-                          />
-                          <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r="8"
-                            fill="transparent"
-                          />
-                          {/* Simple tooltips */}
-                          <title>{`${pt.period}: ${pt.rating} rating`}</title>
-                        </g>
-                      ))}
-                    </svg>
+                        <YAxis 
+                          domain={['dataMin - 50', 'dataMax + 50']}
+                          stroke="#52525b" 
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          dx={-5}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend 
+                          verticalAlign="top" 
+                          height={36} 
+                          content={({ payload }) => (
+                            <div className="flex gap-4 justify-end text-[10px] font-bold tracking-wide uppercase text-zinc-500">
+                              {payload?.map((entry: any, index: number) => {
+                                // Only show legend item if there's at least one data point for that key
+                                const hasData = chartData.some(d => d[entry.dataKey as keyof typeof d] !== null)
+                                if (!hasData) return null
+                                return (
+                                  <div key={index} className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-0.5 rounded" style={{ backgroundColor: entry.color }} />
+                                    <span>{entry.value}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="rating"
+                          name="Standard"
+                          stroke="#f59e0b"
+                          strokeWidth={2.5}
+                          dot={{ r: 2, strokeWidth: 1, fill: "#09090b" }}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          connectNulls
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="rapidRating"
+                          name="Rapid"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          dot={{ r: 2, strokeWidth: 1, fill: "#09090b" }}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          connectNulls
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="blitzRating"
+                          name="Blitz"
+                          stroke="#06b6d4"
+                          strokeWidth={2}
+                          dot={{ r: 2, strokeWidth: 1, fill: "#09090b" }}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          connectNulls
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               ) : (
