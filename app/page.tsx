@@ -165,10 +165,21 @@ export default function Home() {
 
   // Load top list
   const fetchList = async (listName: string, force = false) => {
+    let passwordParam = ''
+    if (force && players.length > 0 && players[0].updatedAt) {
+      const lastSynced = new Date(players[0].updatedAt).getTime()
+      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+      if (isRecent) {
+        const pw = prompt("This list was synced less than 10 minutes ago. Please enter the sync password to force update:")
+        if (pw === null) return // user cancelled
+        passwordParam = `&password=${encodeURIComponent(pw)}`
+      }
+    }
+
     setListLoading(true)
     setListError(null)
     try {
-      const res = await fetch(`/api/list?list=${listName}${force ? '&forceUpdate=true' : ''}`)
+      const res = await fetch(`/api/list?list=${listName}${force ? '&forceUpdate=true' : ''}${passwordParam}`)
       const data = (await res.json()) as any
       if (data.error) throw new Error(data.error)
       setPlayers(data.data || [])
@@ -186,12 +197,23 @@ export default function Home() {
 
   // Load player details
   const fetchPlayerDetail = async (fideId: number, force = false) => {
+    let passwordParam = ''
+    if (force && playerDetail && playerDetail.id === fideId && playerDetail.updatedAt) {
+      const lastSynced = new Date(playerDetail.updatedAt).getTime()
+      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+      if (isRecent) {
+        const pw = prompt("This profile was synced less than 10 minutes ago. Please enter the sync password to force update:")
+        if (pw === null) return // user cancelled
+        passwordParam = `&password=${encodeURIComponent(pw)}`
+      }
+    }
+
     setDetailLoading(true)
     setDetailError(null)
     setHistoryStatus('loading')
     setStatsStatus('loading')
     try {
-      const res = await fetch(`/api/profile?id=${fideId}${force ? '&forceUpdate=true' : ''}`)
+      const res = await fetch(`/api/profile?id=${fideId}${force ? '&forceUpdate=true' : ''}${passwordParam}`)
       const data = (await res.json()) as any
       if (data.error) throw new Error(data.error)
       
@@ -213,9 +235,20 @@ export default function Home() {
   }
 
   const syncHistory = async (fideId: number) => {
+    let passwordParam = ''
+    if (historyUpdatedAt) {
+      const lastSynced = new Date(historyUpdatedAt).getTime()
+      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+      if (isRecent) {
+        const pw = prompt("This rating history was synced less than 10 minutes ago. Please enter the sync password to force update:")
+        if (pw === null) return // user cancelled
+        passwordParam = `&password=${encodeURIComponent(pw)}`
+      }
+    }
+
     setHistoryStatus('loading')
     try {
-      const res = await fetch(`/api/profile/history?id=${fideId}&forceUpdate=true`)
+      const res = await fetch(`/api/profile/history?id=${fideId}&forceUpdate=true${passwordParam}`)
       const data = (await res.json()) as any
       if (data.error) throw new Error(data.error)
       setPlayerHistory(data.data || [])
@@ -227,9 +260,20 @@ export default function Home() {
   }
 
   const syncStats = async (fideId: number) => {
+    let passwordParam = ''
+    if (statsUpdatedAt) {
+      const lastSynced = new Date(statsUpdatedAt).getTime()
+      const isRecent = Date.now() - lastSynced < 10 * 60 * 1000
+      if (isRecent) {
+        const pw = prompt("These stats were synced less than 10 minutes ago. Please enter the sync password to force update:")
+        if (pw === null) return // user cancelled
+        passwordParam = `&password=${encodeURIComponent(pw)}`
+      }
+    }
+
     setStatsStatus('loading')
     try {
-      const res = await fetch(`/api/profile/stats?id=${fideId}&forceUpdate=true`)
+      const res = await fetch(`/api/profile/stats?id=${fideId}&forceUpdate=true${passwordParam}`)
       const data = (await res.json()) as any
       if (data.error) throw new Error(data.error)
       setPlayerStats(data.data || null)

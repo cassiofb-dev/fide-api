@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { topLists } from '@/lib/schema'
 import { scrapeTopList } from '@/lib/scraper'
+import { verifySyncPassword } from '@/lib/auth'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -9,13 +10,22 @@ export async function GET(request: Request) {
   const forceUpdate = searchParams.get('forceUpdate') === 'true'
 
   try {
-    // 1. Check cache if not forcing update
-    if (!forceUpdate) {
-      const cached = await db.query.topLists.findFirst({
-        where: (topLists, { eq }) => eq(topLists.listType, listType),
-      })
+    // 1. Fetch cached list
+    const cached = await db.query.topLists.findFirst({
+      where: (topLists, { eq }) => eq(topLists.listType, listType),
+    })
 
-      if (cached) {
+    if (cached) {
+      if (forceUpdate) {
+        const lastUpdated = new Date(cached.updatedAt).getTime()
+        const isRecent = Date.now() - lastUpdated < 10 * 60 * 1000
+        if (isRecent && !verifySyncPassword(request)) {
+          return NextResponse.json(
+            { error: 'Syncing this list again within 10 minutes requires a valid sync password.' },
+            { status: 401 }
+          )
+        }
+      } else {
         return NextResponse.json({
           source: 'cache',
           data: JSON.parse(cached.data),

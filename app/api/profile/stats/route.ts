@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { players, playerStats } from '@/lib/schema'
 import { scrapePlayerStats, scrapePlayerProfile } from '@/lib/scraper'
 import { eq } from 'drizzle-orm'
+import { verifySyncPassword } from '@/lib/auth'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -19,17 +20,26 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1. Check cache if not forcing update
-    if (!forceUpdate) {
-      const stats = await db.query.playerStats.findFirst({
-        where: (playerStats, { eq }) => eq(playerStats.playerId, fideId)
-      })
+    // 1. Fetch cached stats
+    const cachedStats = await db.query.playerStats.findFirst({
+      where: (playerStats, { eq }) => eq(playerStats.playerId, fideId)
+    })
 
-      if (stats) {
+    if (cachedStats) {
+      if (forceUpdate) {
+        const lastUpdated = new Date(cachedStats.updatedAt).getTime()
+        const isRecent = Date.now() - lastUpdated < 10 * 60 * 1000
+        if (isRecent && !verifySyncPassword(request)) {
+          return NextResponse.json(
+            { error: 'Syncing these stats again within 10 minutes requires a valid sync password.' },
+            { status: 401 }
+          )
+        }
+      } else {
         return NextResponse.json({
           source: 'cache',
-          data: stats,
-          updatedAt: stats.updatedAt
+          data: cachedStats,
+          updatedAt: cachedStats.updatedAt
         })
       }
     }
