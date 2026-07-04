@@ -14,10 +14,10 @@
 	},
 	"dependencies": {
 		"@opennextjs/cloudflare": "^1.19.9",
-		"@scalar/nextjs-api-reference": "^0.11.7",
+		"@scalar/nextjs-api-reference": "^0.11.8",
 		"cheerio": "^1.2.0",
-		"drizzle-orm": "^0.30.10",
-		"next": "16.2.6",
+		"drizzle-orm": "^0.45.2",
+		"next": "16.2.10",
 		"react": "^19.1.7",
 		"react-dom": "^19.1.7",
 		"recharts": "^3.9.1"
@@ -25,14 +25,14 @@
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",
 		"@tailwindcss/postcss": "^4",
-		"@types/node": "^20",
+		"@types/node": "^26.1.0",
 		"@types/react": "^19.1.7",
 		"@types/react-dom": "^19.1.7",
-		"drizzle-kit": "^0.21.4",
-		"eslint": "^9",
-		"eslint-config-next": "16.2.6",
+		"drizzle-kit": "^0.31.10",
+		"eslint": "^9.21.0",
+		"eslint-config-next": "16.2.10",
 		"tailwindcss": "^4",
-		"typescript": "^5.7.4",
-		"wrangler": "^4.86.0"
+		"typescript": "^6.0.3",
+		"wrangler": "^4.107.0"
 	}
 }
