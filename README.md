@@ -75,16 +75,30 @@ pnpm preview
 ```
 
 ### Deploy to Cloudflare
-To build and deploy the application live onto Cloudflare Pages:
+
+#### Manual Deployment
+To build and deploy the application manually live onto Cloudflare Pages:
 ```bash
 pnpm deploy
 ```
 
-#### Production Database Migrations
-To apply your migrations to the production Cloudflare D1 database:
+#### Production Database Migrations (Manual)
+To apply your migrations manually to the production Cloudflare D1 database:
 ```bash
 pnpm exec wrangler d1 migrations apply fide-db --remote
 ```
+
+#### Automated Deployment (CI/CD via GitHub Actions)
+This project includes a pre-configured GitHub Actions deployment workflow. Every push to the `main` branch automatically triggers a runner to:
+1. Setup Node.js (v20) and pnpm (v9) with dependency caching.
+2. Compile and package the Next.js application for Cloudflare using OpenNext.
+3. Automatically execute any pending database migrations on the remote Cloudflare D1 instance.
+4. Deploy the compiled assets and worker script to Cloudflare.
+
+##### Required GitHub Secrets
+To enable automated deployments, configure the following secrets in your repository settings (**Settings > Secrets and variables > Actions**):
+- `CLOUDFLARE_API_TOKEN`: A Cloudflare API Token with permissions to edit Workers/Pages and D1 Databases.
+- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID.
 
 ---
 

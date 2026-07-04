@@ -333,7 +333,7 @@ export async function scrapeTopList(listType: string): Promise<TopListPlayer[]> 
             </div>
 
             <p>
-              To maintain the integrity of our edge configurations, database tables execute schema migrations on Cloudflare D1 upon repository updates, guaranteeing continuous uptime.
+              To maintain the integrity of our edge configurations, database tables execute schema migrations on Cloudflare D1 automatically. Every push to the <code className="text-zinc-300 bg-zinc-900/60 px-1 py-0.5 rounded">main</code> branch runs an automated GitHub Actions deployment workflow. This pipeline installs project dependencies, compiles the Next.js application for Cloudflare using OpenNext, executes pending SQLite migrations directly on the remote D1 database instance, and deploys the assets to Cloudflare.
             </p>
           </section>
 
