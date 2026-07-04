@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { players, playerStats } from '@/lib/schema'
 import { scrapePlayerStats, scrapePlayerProfile } from '@/lib/scraper'
+import { eq } from 'drizzle-orm'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -19,8 +21,8 @@ export async function GET(request: Request) {
   try {
     // 1. Check cache if not forcing update
     if (!forceUpdate) {
-      const stats = await prisma.playerStats.findUnique({
-        where: { playerId: fideId }
+      const stats = await db.query.playerStats.findFirst({
+        where: (playerStats, { eq }) => eq(playerStats.playerId, fideId)
       })
 
       if (stats) {
@@ -33,27 +35,17 @@ export async function GET(request: Request) {
     }
 
     // 2. Ensure player exists in DB before upserting stats
-    const playerExists = await prisma.player.findUnique({ where: { id: fideId } })
+    const playerExists = await db.query.players.findFirst({
+      columns: { id: true },
+      where: (players, { eq }) => eq(players.id, fideId)
+    })
+
     if (!playerExists) {
       const basicProfile = await scrapePlayerProfile(fideId)
-      await prisma.player.create({
-        data: {
-          id: fideId,
-          name: basicProfile.name,
-          federation: basicProfile.federation,
-          birthYear: basicProfile.birthYear,
-          gender: basicProfile.gender,
-          title: basicProfile.title,
-          stdRating: basicProfile.stdRating,
-          rapidRating: basicProfile.rapidRating,
-          blitzRating: basicProfile.blitzRating,
-          worldRankActive: basicProfile.worldRankActive,
-          worldRankAll: basicProfile.worldRankAll,
-          nationalRankActive: basicProfile.nationalRankActive,
-          nationalRankAll: basicProfile.nationalRankAll,
-          continentRankActive: basicProfile.continentRankActive,
-          continentRankAll: basicProfile.continentRankAll,
-        }
+      const { charts, stats, ...profileData } = basicProfile
+      await db.insert(players).values({
+        ...profileData,
+        updatedAt: new Date().toISOString(),
       })
     }
 
@@ -62,23 +54,29 @@ export async function GET(request: Request) {
 
     // 4. Save to database
     if (stats) {
-      const savedStats = await prisma.playerStats.upsert({
-        where: { playerId: fideId },
-        update: {
-          ...stats
-        },
-        create: {
+      const now = new Date().toISOString()
+      const [savedStats] = await db.insert(playerStats)
+        .values({
           playerId: fideId,
-          ...stats
-        }
-      })
+          ...stats,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: playerStats.playerId,
+          set: {
+            ...stats,
+            updatedAt: now,
+          }
+        })
+        .returning()
+
       return NextResponse.json({
         source: 'scrape',
         data: savedStats,
         updatedAt: savedStats.updatedAt
       })
     } else {
-      await prisma.playerStats.deleteMany({ where: { playerId: fideId } })
+      await db.delete(playerStats).where(eq(playerStats.playerId, fideId))
       return NextResponse.json({
         source: 'scrape',
         data: null,

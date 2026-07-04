@@ -1,5 +1,5 @@
 {
-	"name": "my-next-app",
+	"name": "fide-api",
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
@@ -14,10 +14,9 @@
 	},
 	"dependencies": {
 		"@opennextjs/cloudflare": "^1.19.9",
-		"@prisma/adapter-d1": "^7.8.0",
-		"@prisma/client": "^7.8.0",
 		"@scalar/nextjs-api-reference": "^0.11.7",
 		"cheerio": "^1.2.0",
+		"drizzle-orm": "^0.30.10",
 		"next": "16.2.6",
 		"react": "^19.1.7",
 		"react-dom": "^19.1.7"
@@ -28,9 +27,9 @@
 		"@types/node": "^20",
 		"@types/react": "^19.1.7",
 		"@types/react-dom": "^19.1.7",
+		"drizzle-kit": "^0.21.4",
 		"eslint": "^9",
 		"eslint-config-next": "16.2.6",
-		"prisma": "^7.8.0",
 		"tailwindcss": "^4",
 		"typescript": "^5.7.4",
 		"wrangler": "^4.86.0"

@@ -75,7 +75,7 @@ export default function AboutPage() {
                 <strong className="text-zinc-300">Framework</strong>: Next.js 16 (App Router) for high-performance React server components and dynamic API route handlers.
               </li>
               <li>
-                <strong className="text-zinc-300">Database Adapter</strong>: Prisma ORM for type-safe database querying and schema synchronization.
+                <strong className="text-zinc-300">Database Adapter</strong>: Drizzle ORM for type-safe database querying and relational schema integrity.
               </li>
               <li>
                 <strong className="text-zinc-300">HTML Scraping</strong>: Cheerio library for robust document object model traversal and reliable content extraction.
@@ -152,7 +152,7 @@ export default function AboutPage() {
 
       {/* Footer */}
       <footer className="mt-auto border-t border-zinc-900 py-6 text-center text-xs text-zinc-600 font-medium">
-        <p>© 2026 cassiofernando. Built with Next.js, Prisma &amp; Cloudflare D1.</p>
+        <p>© 2026 cassiofernando. Built with Next.js, Drizzle ORM &amp; Cloudflare D1.</p>
       </footer>
     </div>
   )

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { topLists } from '@/lib/schema'
 import { scrapeTopList } from '@/lib/scraper'
 
 export async function GET(request: Request) {
@@ -10,8 +11,8 @@ export async function GET(request: Request) {
   try {
     // 1. Check cache if not forcing update
     if (!forceUpdate) {
-      const cached = await prisma.topList.findUnique({
-        where: { listType },
+      const cached = await db.query.topLists.findFirst({
+        where: (topLists, { eq }) => eq(topLists.listType, listType),
       })
 
       if (cached) {
@@ -27,16 +28,21 @@ export async function GET(request: Request) {
     const players = await scrapeTopList(listType)
 
     // 3. Save to database
-    const saved = await prisma.topList.upsert({
-      where: { listType },
-      update: {
-        data: JSON.stringify(players),
-      },
-      create: {
+    const now = new Date().toISOString()
+    const [saved] = await db.insert(topLists)
+      .values({
         listType,
         data: JSON.stringify(players),
-      },
-    })
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: topLists.listType,
+        set: {
+          data: JSON.stringify(players),
+          updatedAt: now,
+        },
+      })
+      .returning()
 
     return NextResponse.json({
       source: 'scrape',

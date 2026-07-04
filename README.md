@@ -1,12 +1,12 @@
 # FIDE API Scraper & Viewer
 
-A modern Next.js application designed to scrape and display top chess players' ratings and profile details from the official FIDE website, using Cloudflare Pages, Cloudflare D1 (SQLite), and Prisma ORM.
+A modern Next.js application designed to scrape and display top chess players' ratings and profile details from the official FIDE website, using Cloudflare Pages, Cloudflare D1 (SQLite), and Drizzle ORM.
 
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router)
 - **Deployment & Hosting**: Cloudflare Pages
-- **Database**: Cloudflare D1
-- **ORM**: Prisma 7 (with `@prisma/adapter-d1` and `prisma.config.ts`)
+- **Database**: Cloudflare D1 (SQLite)
+- **ORM**: Drizzle ORM
 - **Package Manager**: pnpm
 
 ---
@@ -24,7 +24,6 @@ pnpm install
 ```
 
 ### 2. Configure Local D1 State & Migrations
-Prisma CLI in version 7+ utilizes `prisma.config.ts` to manage datasource URLs instead of loading them from `schema.prisma`. 
 
 1. **Generate type definitions** for Cloudflare bindings:
    ```bash
@@ -50,23 +49,19 @@ pnpm dev
 Open [http://localhost:3000](http://localhost:3000) with your browser to view the application.
 
 - The application uses `initOpenNextCloudflareForDev()` inside `next.config.ts` to expose the local D1 database bindings.
-- Database access is lazily initialized via a request-scoped Proxy wrapper in `lib/prisma.ts`.
+- Database access is lazily initialized via a request-scoped Proxy wrapper in `lib/db.ts`.
 - The local server dynamically updates and hot-reloads as files change.
 
 ### Create a New Database Migration
-If you make changes to `prisma/schema.prisma`:
-1. Generate the SQL migration schema script:
+To create database schema migrations:
+1. Generate a new SQL migration file:
    ```bash
-   pnpm exec prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > migrations/XXXX_migration_name.sql
+   pnpm exec wrangler d1 migrations create fide-db <migration_name>
    ```
-   *(Or diff from a baseline/previous migration/state)*
-2. Apply the migration to the local D1 database:
+2. Write your SQL statements in the newly created migration file in the `migrations/` directory.
+3. Apply the migration to the local D1 database:
    ```bash
    pnpm exec wrangler d1 migrations apply fide-db --local
-   ```
-3. Update database types:
-   ```bash
-   pnpm exec prisma generate
    ```
 
 ---
@@ -74,7 +69,7 @@ If you make changes to `prisma/schema.prisma`:
 ## Preview & Deployment
 
 ### Preview Locally (Cloudflare Worker Environment)
-To build and preview the compiled application locally in a environment simulating the Cloudflare Worker runtime (`workerd`):
+To build and preview the compiled application locally in an environment simulating the Cloudflare Worker runtime (`workerd`):
 ```bash
 pnpm preview
 ```
@@ -102,7 +97,7 @@ This project provides an interactive OpenAPI reference UI powered by [Scalar](ht
 
 ### API Endpoints
 
-All endpoints support caching and database upserts. If `forceUpdate=true` is provided, a fresh scraper request is sent to FIDE's website, and the database cache is updated.
+All endpoints support caching and database upserts. If `forceUpdate=true` is provided, fresh scraper requests are sent to FIDE's website in parallel, and the database cache is updated.
 
 #### 1. Get Top Player List
 Retrieve the ranking list of the top 100 chess players across various categories.
@@ -120,19 +115,19 @@ Retrieve the ranking list of the top 100 chess players across various categories
   curl "http://localhost:3000/api/list?list=open"
   ```
 
-#### 2. Get Player Profile
-Retrieve core profile information for a player, including federations, birth year, titles, and active ratings.
+#### 2. Get Player Profile (Consolidated)
+Retrieve complete details, rating history charts, and game statistics for a player in a single request.
 - **URL**: `/api/profile`
 - **Method**: `GET`
 - **Query Parameters**:
   - `id` (required): The official FIDE ID of the player (e.g. `1503014` for Magnus Carlsen).
-  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache and scrape fresh data.
+  - `forceUpdate` (optional, default: `false`): Set to `true` to force bypass cache, scrape fresh data in parallel on the server, and batch update the D1 database.
 - **Example request**:
   ```bash
   curl "http://localhost:3000/api/profile?id=1503014"
   ```
 
-#### 3. Get Player Rating History
+#### 3. Get Player Rating History (Legacy)
 Retrieve the chronological rating progress chart points for the player across standard, rapid, and blitz time controls.
 - **URL**: `/api/profile/history`
 - **Method**: `GET`
@@ -144,7 +139,7 @@ Retrieve the chronological rating progress chart points for the player across st
   curl "http://localhost:3000/api/profile/history?id=1503014"
   ```
 
-#### 4. Get Player Game Statistics
+#### 4. Get Player Game Statistics (Legacy)
 Retrieve win/draw/loss counts split by color (White vs. Black) and format (Standard, Rapid, Blitz).
 - **URL**: `/api/profile/stats`
 - **Method**: `GET`
@@ -155,4 +150,3 @@ Retrieve win/draw/loss counts split by color (White vs. Black) and format (Stand
   ```bash
   curl "http://localhost:3000/api/profile/stats?id=1503014"
   ```
-

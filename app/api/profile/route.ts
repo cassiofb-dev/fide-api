@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { scrapePlayerProfile } from '@/lib/scraper'
+import { db } from '@/lib/db'
+import { players, playerCharts, playerStats } from '@/lib/schema'
+import { scrapePlayerProfile, scrapePlayerHistory, scrapePlayerStats } from '@/lib/scraper'
+import { eq } from 'drizzle-orm'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -19,58 +21,105 @@ export async function GET(request: Request) {
   try {
     // 1. Check cache if not forcing update
     if (!forceUpdate) {
-      const player = await prisma.player.findUnique({
-        where: { id: fideId }
+      const player = await db.query.players.findFirst({
+        where: (players, { eq }) => eq(players.id, fideId),
+        with: {
+          chart: true,
+          stats: true,
+        }
       })
 
       if (player) {
-        return NextResponse.json({ source: 'cache', data: player })
+        return NextResponse.json({
+          source: 'cache',
+          data: {
+            ...player,
+            charts: player.chart ? JSON.parse(player.chart.data) : [],
+            stats: player.stats || null,
+          }
+        })
       }
     }
 
-    // 2. Scrape player profile from FIDE
-    const profile = await scrapePlayerProfile(fideId)
+    // 2. Scrape player details, history, and stats in parallel
+    const [profile, history, stats] = await Promise.all([
+      scrapePlayerProfile(fideId),
+      scrapePlayerHistory(fideId),
+      scrapePlayerStats(fideId)
+    ])
 
-    // 3. Save to database
-    // Upsert Player
-    const savedPlayer = await prisma.player.upsert({
-      where: { id: fideId },
-      update: {
-        name: profile.name,
-        federation: profile.federation,
-        birthYear: profile.birthYear,
-        gender: profile.gender,
-        title: profile.title,
-        stdRating: profile.stdRating,
-        rapidRating: profile.rapidRating,
-        blitzRating: profile.blitzRating,
-        worldRankActive: profile.worldRankActive,
-        worldRankAll: profile.worldRankAll,
-        nationalRankActive: profile.nationalRankActive,
-        nationalRankAll: profile.nationalRankAll,
-        continentRankActive: profile.continentRankActive,
-        continentRankAll: profile.continentRankAll,
-      },
-      create: {
-        id: fideId,
-        name: profile.name,
-        federation: profile.federation,
-        birthYear: profile.birthYear,
-        gender: profile.gender,
-        title: profile.title,
-        stdRating: profile.stdRating,
-        rapidRating: profile.rapidRating,
-        blitzRating: profile.blitzRating,
-        worldRankActive: profile.worldRankActive,
-        worldRankAll: profile.worldRankAll,
-        nationalRankActive: profile.nationalRankActive,
-        nationalRankAll: profile.nationalRankAll,
-        continentRankActive: profile.continentRankActive,
-        continentRankAll: profile.continentRankAll,
+    // 3. Save to database using D1 Batch API
+    const now = new Date().toISOString()
+    const { charts, stats: _, ...profileData } = profile
+
+    await db.batch([
+      db.insert(players)
+        .values({
+          ...profileData,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: players.id,
+          set: {
+            ...profileData,
+            updatedAt: now,
+          }
+        }),
+      db.insert(playerCharts)
+        .values({
+          playerId: fideId,
+          data: JSON.stringify(history),
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: playerCharts.playerId,
+          set: {
+            data: JSON.stringify(history),
+            updatedAt: now,
+          }
+        }),
+      ...(stats
+        ? [
+            db.insert(playerStats)
+              .values({
+                playerId: fideId,
+                ...stats,
+                updatedAt: now,
+              })
+              .onConflictDoUpdate({
+                target: playerStats.playerId,
+                set: {
+                  ...stats,
+                  updatedAt: now,
+                }
+              })
+          ]
+        : [
+            db.delete(playerStats).where(eq(playerStats.playerId, fideId))
+          ])
+    ])
+
+    // 4. Retrieve complete relational record
+    const savedPlayer = await db.query.players.findFirst({
+      where: (players, { eq }) => eq(players.id, fideId),
+      with: {
+        chart: true,
+        stats: true,
       }
     })
 
-    return NextResponse.json({ source: 'scrape', data: savedPlayer })
+    if (!savedPlayer) {
+      throw new Error('Failed to retrieve player after saving')
+    }
+
+    return NextResponse.json({
+      source: 'scrape',
+      data: {
+        ...savedPlayer,
+        charts: savedPlayer.chart ? JSON.parse(savedPlayer.chart.data) : [],
+        stats: savedPlayer.stats || null,
+      }
+    })
   } catch (error: any) {
     console.error(`Error in /api/profile for ID ${fideId}:`, error)
     return NextResponse.json(
