@@ -30,6 +30,7 @@ export const ERROR_MESSAGES = {
   DB_BINDING_MISSING: "D1 Database binding ('fide-db') is not available in the Cloudflare context or process.env. Make sure you have configured the D1 binding correctly in wrangler.jsonc.",
   MISSING_FIDE_ID: "Missing player FIDE ID",
   INVALID_FIDE_ID: "Invalid player FIDE ID",
+  INVALID_RETRIES: "Invalid retries parameter",
   PLAYER_NOT_FOUND: (fideId: number) => `Player with ID ${fideId} not found on FIDE.`,
   SYNC_THROTTLE: (displayResourceName: string) => `Syncing ${displayResourceName} again within 10 minutes requires a valid sync password.`,
   SAVE_PLAYER_FAILED: "Failed to retrieve player after saving",

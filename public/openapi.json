@@ -50,6 +50,17 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "retries",
+            "in": "query",
+            "description": "Number of retries when scraping from FIDE.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ],
         "responses": {
@@ -129,6 +140,17 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "retries",
+            "in": "query",
+            "description": "Number of retries when scraping from FIDE.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ],
         "responses": {
@@ -202,6 +224,17 @@
             "schema": {
               "type": "boolean",
               "default": false
+            }
+          },
+          {
+            "name": "retries",
+            "in": "query",
+            "description": "Number of retries when scraping from FIDE.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
             }
           }
         ],
@@ -281,6 +314,17 @@
             "schema": {
               "type": "boolean",
               "default": false
+            }
+          },
+          {
+            "name": "retries",
+            "in": "query",
+            "description": "Number of retries when scraping from FIDE.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
             }
           }
         ],

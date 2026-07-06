@@ -101,11 +101,11 @@ async function fetchWithRetry(url: string, init?: RequestInit, retries = 0, dela
 }
 
 // Scrape Top 100 players list
-export async function scrapeTopList(listType: string): Promise<TopListPlayer[]> {
+export async function scrapeTopList(listType: string, retries?: number): Promise<TopListPlayer[]> {
   const url = `https://ratings.fide.com/a_top.php?list=${listType}`
   const response = await fetchWithRetry(url, {
     headers: COMMON_HEADERS,
-  })
+  }, retries)
 
   if (!response.ok) {
     throw new FideConnectionError(ERROR_MESSAGES.FIDE_TOP_LIST_FAILED(response.statusText))
@@ -152,11 +152,11 @@ export async function scrapeTopList(listType: string): Promise<TopListPlayer[]> 
 }
 
 // Scrape Player Profile
-export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile> {
+export async function scrapePlayerProfile(fideId: number, retries?: number): Promise<PlayerProfile> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
   const response = await fetchWithRetry(profileUrl, {
     headers: COMMON_HEADERS,
-  })
+  }, retries)
 
   if (!response.ok) {
     throw new FideConnectionError(ERROR_MESSAGES.FIDE_PROFILE_FAILED(response.statusText))
@@ -248,7 +248,7 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
 }
 
 // Scrape Player Rating History
-export async function scrapePlayerHistory(fideId: number): Promise<PlayerChartItem[]> {
+export async function scrapePlayerHistory(fideId: number, retries?: number): Promise<PlayerChartItem[]> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
   const chartResponse = await fetchWithRetry(`https://ratings.fide.com/a_chart_data.phtml?event=${fideId}&period=0`, {
     method: 'POST',
@@ -258,7 +258,7 @@ export async function scrapePlayerHistory(fideId: number): Promise<PlayerChartIt
       'Origin': 'https://ratings.fide.com',
       'Referer': profileUrl,
     },
-  })
+  }, retries)
 
   if (!chartResponse.ok) {
     throw new FideConnectionError(ERROR_MESSAGES.FIDE_HISTORY_FAILED(chartResponse.statusText));
@@ -281,7 +281,7 @@ export async function scrapePlayerHistory(fideId: number): Promise<PlayerChartIt
 }
 
 // Scrape Player Stats
-export async function scrapePlayerStats(fideId: number): Promise<PlayerStatsData | null> {
+export async function scrapePlayerStats(fideId: number, retries?: number): Promise<PlayerStatsData | null> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
   const statsResponse = await fetchWithRetry(`https://ratings.fide.com/a_data_stats.php?id1=${fideId}&id2=0`, {
     method: 'POST',
@@ -291,7 +291,7 @@ export async function scrapePlayerStats(fideId: number): Promise<PlayerStatsData
       'Origin': 'https://ratings.fide.com',
       'Referer': profileUrl,
     },
-  })
+  }, retries)
 
   if (!statsResponse.ok) {
     throw new FideConnectionError(ERROR_MESSAGES.FIDE_STATS_FAILED(statsResponse.statusText));

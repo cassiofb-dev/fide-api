@@ -5,7 +5,7 @@ import { DataSource, ResourceType } from '../enums';
 import { ERROR_MESSAGES } from '../errors';
 
 export class PlayerService {
-  async getPlayerProfile(idStr: string | null, forceUpdate: boolean, full: boolean, request: Request) {
+  async getPlayerProfile(idStr: string | null, forceUpdate: boolean, full: boolean, request: Request, retries?: number) {
     const fideId = parseAndValidateFideId(idStr);
 
     // 1. Fetch cached player
@@ -33,9 +33,9 @@ export class PlayerService {
     if (full) {
       // 2. Scrape details in parallel
       const [profile, history, stats] = await Promise.all([
-        scrapePlayerProfile(fideId),
-        scrapePlayerHistory(fideId),
-        scrapePlayerStats(fideId),
+        scrapePlayerProfile(fideId, retries),
+        scrapePlayerHistory(fideId, retries),
+        scrapePlayerStats(fideId, retries),
       ]);
 
       const now = new Date().toISOString();
@@ -61,7 +61,7 @@ export class PlayerService {
       };
     } else {
       // Scrape ONLY profile
-      const profile = await scrapePlayerProfile(fideId);
+      const profile = await scrapePlayerProfile(fideId, retries);
       const now = new Date().toISOString();
       const { charts: _, stats: __, ...profileData } = profile;
 
@@ -83,7 +83,7 @@ export class PlayerService {
     }
   }
 
-  async getPlayerHistory(idStr: string | null, forceUpdate: boolean, request: Request) {
+  async getPlayerHistory(idStr: string | null, forceUpdate: boolean, request: Request, retries?: number) {
     const fideId = parseAndValidateFideId(idStr);
 
     // 1. Fetch cached chart
@@ -105,7 +105,7 @@ export class PlayerService {
     const playerExists = await playerRepository.exists(fideId);
 
     if (!playerExists) {
-      const basicProfile = await scrapePlayerProfile(fideId);
+      const basicProfile = await scrapePlayerProfile(fideId, retries);
       const { charts, stats, ...profileData } = basicProfile;
       await playerRepository.insertPlayerOnly({
         ...profileData,
@@ -114,7 +114,7 @@ export class PlayerService {
     }
 
     // 3. Scrape player history
-    const history = await scrapePlayerHistory(fideId);
+    const history = await scrapePlayerHistory(fideId, retries);
 
     // 4. Save to database
     const now = new Date().toISOString();
@@ -127,7 +127,7 @@ export class PlayerService {
     };
   }
 
-  async getPlayerStats(idStr: string | null, forceUpdate: boolean, request: Request) {
+  async getPlayerStats(idStr: string | null, forceUpdate: boolean, request: Request, retries?: number) {
     const fideId = parseAndValidateFideId(idStr);
 
     // 1. Fetch cached stats
@@ -149,7 +149,7 @@ export class PlayerService {
     const playerExists = await playerRepository.exists(fideId);
 
     if (!playerExists) {
-      const basicProfile = await scrapePlayerProfile(fideId);
+      const basicProfile = await scrapePlayerProfile(fideId, retries);
       const { charts, stats, ...profileData } = basicProfile;
       await playerRepository.insertPlayerOnly({
         ...profileData,
@@ -158,7 +158,7 @@ export class PlayerService {
     }
 
     // 3. Scrape player stats
-    const stats = await scrapePlayerStats(fideId);
+    const stats = await scrapePlayerStats(fideId, retries);
 
     // 4. Save to database
     if (stats) {

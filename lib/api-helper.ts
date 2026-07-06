@@ -1,5 +1,18 @@
 import { NextResponse } from 'next/server';
-import { ValidationError, SyncThrottleError, FideConnectionError, PlayerNotFoundError } from './errors';
+import { ValidationError, SyncThrottleError, FideConnectionError, PlayerNotFoundError, ERROR_MESSAGES } from './errors';
+
+export function parseRetries(request: Request): number | undefined {
+  const { searchParams } = new URL(request.url);
+  const retriesStr = searchParams.get('retries');
+  if (retriesStr === null) {
+    return undefined;
+  }
+  const parsed = parseInt(retriesStr, 10);
+  if (isNaN(parsed) || parsed < 0) {
+    throw new ValidationError(ERROR_MESSAGES.INVALID_RETRIES);
+  }
+  return parsed;
+}
 
 export async function runApiHandler(handler: () => Promise<Response | NextResponse>) {
   try {

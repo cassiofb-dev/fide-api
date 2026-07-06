@@ -4,7 +4,7 @@ import { verifySyncThrottle } from '../auth';
 import { ListType, DataSource, ResourceType } from '../enums';
 
 export class TopListService {
-  async getTopList(listTypeStr: string | null, forceUpdate: boolean, request: Request) {
+  async getTopList(listTypeStr: string | null, forceUpdate: boolean, request: Request, retries?: number) {
     const listType = listTypeStr || ListType.OPEN;
 
     // 1. Fetch cached list
@@ -23,7 +23,7 @@ export class TopListService {
     }
 
     // 2. Scrape from FIDE
-    const players = await scrapeTopList(listType);
+    const players = await scrapeTopList(listType, retries);
 
     // 3. Save to database
     const now = new Date().toISOString();
