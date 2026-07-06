@@ -67,6 +67,7 @@ interface HistoryChartProps {
   historyUpdatedAt: string | null
   onSyncHistory: () => void
   mounted: boolean
+  attempt?: number
 }
 
 export function HistoryChart({
@@ -76,6 +77,7 @@ export function HistoryChart({
   historyUpdatedAt,
   onSyncHistory,
   mounted,
+  attempt = 1,
 }: HistoryChartProps) {
   // Sort and filter chart data for SVG
   const chartData = useMemo(() => {
@@ -129,7 +131,7 @@ export function HistoryChart({
           />
         </svg>
         <span className="text-xs text-muted-foreground font-semibold">
-          Fetching rating history from FIDE...
+          Trying to get rating history from FIDE (Attempt {attempt}/4)...
         </span>
       </div>
     )

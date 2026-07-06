@@ -39,6 +39,7 @@ interface StatsCardProps {
   statsUpdatedAt: string | null
   onSyncStats: () => void
   mounted: boolean
+  attempt?: number
 }
 
 export function StatsCard({
@@ -48,6 +49,7 @@ export function StatsCard({
   statsUpdatedAt,
   onSyncStats,
   mounted,
+  attempt = 1,
 }: StatsCardProps) {
   const [statsFormat, setStatsFormat] = useState<"all" | "std" | "rpd" | "blz">("all")
 
@@ -95,7 +97,7 @@ export function StatsCard({
           />
         </svg>
         <span className="text-xs text-muted-foreground font-semibold">
-          Fetching stats from FIDE...
+          Trying to get stats from FIDE (Attempt {attempt}/4)...
         </span>
       </div>
     )

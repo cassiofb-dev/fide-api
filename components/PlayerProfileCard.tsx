@@ -28,6 +28,7 @@ interface PlayerProfileCardProps {
   onForceSync: () => void
   mounted: boolean
   showLinkToDetails?: boolean
+  attempt?: number
 }
 
 export function PlayerProfileCard({
@@ -36,23 +37,33 @@ export function PlayerProfileCard({
   onForceSync,
   mounted,
   showLinkToDetails = false,
+  attempt = 1,
 }: PlayerProfileCardProps) {
   if (detailLoading) {
     return (
-      <div className="bg-card/45 border border-border rounded-2xl p-6 space-y-6 animate-pulse">
-        <div className="flex items-center justify-between border-b border-border pb-6">
-          <div className="space-y-2">
-            <div className="h-6 w-48 bg-muted rounded" />
-            <div className="h-4 w-28 bg-muted/60 rounded" />
-          </div>
-          <div className="h-10 w-28 bg-muted rounded" />
+      <div className="bg-card/45 border border-border rounded-2xl p-6 space-y-6 animate-pulse flex flex-col justify-center min-h-[400px]">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            stroke="currentColor"
+            className="w-8 h-8 text-primary animate-spin mb-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+            />
+          </svg>
+          <span className="text-sm text-muted-foreground font-semibold">
+            Trying to get player profile from FIDE (Attempt {attempt}/4)...
+          </span>
+          <span className="text-xs text-muted-foreground/60 mt-1">
+            This may take a few seconds if data is being freshly scraped
+          </span>
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="h-20 bg-muted rounded-xl" />
-          <div className="h-20 bg-muted rounded-xl" />
-          <div className="h-20 bg-muted rounded-xl" />
-        </div>
-        <div className="h-40 bg-muted rounded-xl" />
       </div>
     )
   }

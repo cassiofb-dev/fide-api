@@ -22,9 +22,12 @@ export default function PlayerPage() {
   const [playerDetail, setPlayerDetail] = useState<PlayerDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(true)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const [detailAttempt, setDetailAttempt] = useState(1)
 
   const [historyStatus, setHistoryStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle")
   const [statsStatus, setStatsStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle")
+  const [historyAttempt, setHistoryAttempt] = useState(1)
+  const [statsAttempt, setStatsAttempt] = useState(1)
 
   const [playerHistory, setPlayerHistory] = useState<PlayerChart[]>([])
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
@@ -48,26 +51,39 @@ export default function PlayerPage() {
     setDetailError(null)
     setHistoryStatus("loading")
     setStatsStatus("loading")
-    try {
-      const res = await fetch(`/api/profile?id=${id}&full=true${force ? "&forceUpdate=true" : ""}${passwordParam}`)
-      const data = (await res.json()) as any
-      if (data.error) throw new Error(data.error)
 
-      const p = data.data
-      setPlayerDetail(p)
-      setPlayerHistory(p.charts || [])
-      setPlayerStats(p.stats || null)
-      setHistoryUpdatedAt(p.chart?.updatedAt || null)
-      setStatsUpdatedAt(p.stats?.updatedAt || null)
-      setHistoryStatus("loaded")
-      setStatsStatus("loaded")
-    } catch (err: any) {
-      setDetailError(err.message || "Failed to fetch player profile")
-      setHistoryStatus("error")
-      setStatsStatus("error")
-    } finally {
-      setDetailLoading(false)
+    let attempt = 1
+    const maxAttempts = 4
+    while (attempt <= maxAttempts) {
+      setDetailAttempt(attempt)
+      setHistoryAttempt(attempt)
+      setStatsAttempt(attempt)
+      try {
+        const res = await fetch(`/api/profile?id=${id}&full=true${force ? "&forceUpdate=true" : ""}${passwordParam}`)
+        const data = (await res.json()) as any
+        if (data.error) throw new Error(data.error)
+
+        const p = data.data
+        setPlayerDetail(p)
+        setPlayerHistory(p.charts || [])
+        setPlayerStats(p.stats || null)
+        setHistoryUpdatedAt(p.chart?.updatedAt || null)
+        setStatsUpdatedAt(p.stats?.updatedAt || null)
+        setHistoryStatus("loaded")
+        setStatsStatus("loaded")
+        break
+      } catch (err: any) {
+        if (attempt >= maxAttempts) {
+          setDetailError(err.message || "Failed to fetch player profile")
+          setHistoryStatus("error")
+          setStatsStatus("error")
+          break
+        }
+        attempt++
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
     }
+    setDetailLoading(false)
   }
 
   const syncHistory = async (id: number, password?: string) => {
@@ -77,15 +93,27 @@ export default function PlayerPage() {
     }
 
     setHistoryStatus("loading")
-    try {
-      const res = await fetch(`/api/profile/history?id=${id}&forceUpdate=true${passwordParam}`)
-      const data = (await res.json()) as any
-      if (data.error) throw new Error(data.error)
-      setPlayerHistory(data.data || [])
-      setHistoryUpdatedAt(data.updatedAt || new Date().toISOString())
-      setHistoryStatus("loaded")
-    } catch (err: any) {
-      setHistoryStatus("error")
+
+    let attempt = 1
+    const maxAttempts = 4
+    while (attempt <= maxAttempts) {
+      setHistoryAttempt(attempt)
+      try {
+        const res = await fetch(`/api/profile/history?id=${id}&forceUpdate=true${passwordParam}`)
+        const data = (await res.json()) as any
+        if (data.error) throw new Error(data.error)
+        setPlayerHistory(data.data || [])
+        setHistoryUpdatedAt(data.updatedAt || new Date().toISOString())
+        setHistoryStatus("loaded")
+        break
+      } catch (err: any) {
+        if (attempt >= maxAttempts) {
+          setHistoryStatus("error")
+          break
+        }
+        attempt++
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
     }
   }
 
@@ -96,15 +124,27 @@ export default function PlayerPage() {
     }
 
     setStatsStatus("loading")
-    try {
-      const res = await fetch(`/api/profile/stats?id=${id}&forceUpdate=true${passwordParam}`)
-      const data = (await res.json()) as any
-      if (data.error) throw new Error(data.error)
-      setPlayerStats(data.data || null)
-      setStatsUpdatedAt(data.updatedAt || new Date().toISOString())
-      setStatsStatus("loaded")
-    } catch (err: any) {
-      setStatsStatus("error")
+
+    let attempt = 1
+    const maxAttempts = 4
+    while (attempt <= maxAttempts) {
+      setStatsAttempt(attempt)
+      try {
+        const res = await fetch(`/api/profile/stats?id=${id}&forceUpdate=true${passwordParam}`)
+        const data = (await res.json()) as any
+        if (data.error) throw new Error(data.error)
+        setPlayerStats(data.data || null)
+        setStatsUpdatedAt(data.updatedAt || new Date().toISOString())
+        setStatsStatus("loaded")
+        break
+      } catch (err: any) {
+        if (attempt >= maxAttempts) {
+          setStatsStatus("error")
+          break
+        }
+        attempt++
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
     }
   }
 
@@ -210,6 +250,7 @@ export default function PlayerPage() {
           onForceSync={handleForceSyncProfile}
           mounted={mounted}
           showLinkToDetails={false}
+          attempt={detailAttempt}
         />
 
         {/* Charts and Game Stats (only if profile is loaded or loading) */}
@@ -222,6 +263,7 @@ export default function PlayerPage() {
               historyUpdatedAt={historyUpdatedAt}
               onSyncHistory={handleSyncHistory}
               mounted={mounted}
+              attempt={historyAttempt}
             />
 
             <StatsCard
@@ -231,6 +273,7 @@ export default function PlayerPage() {
               statsUpdatedAt={statsUpdatedAt}
               onSyncStats={handleSyncStats}
               mounted={mounted}
+              attempt={statsAttempt}
             />
           </div>
         )}

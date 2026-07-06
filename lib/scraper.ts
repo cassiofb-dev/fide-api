@@ -71,10 +71,35 @@ const COMMON_HEADERS = {
   'Accept': '*/*',
 }
 
+async function fetchWithRetry(url: string, init?: RequestInit, retries = 0, delayMs = 1000): Promise<Response> {
+  for (let attempt = 1; attempt <= retries + 1; attempt++) {
+    if (attempt > 1) {
+      console.log(`[FIDE API] Retrying fetch from FIDE (attempt ${attempt}/${retries + 1}) after 1s delay for URL: ${url}`);
+    } else {
+      console.log(`[FIDE API] Trying to get from FIDE (attempt 1/${retries + 1}) for URL: ${url}`);
+    }
+    try {
+      const response = await fetch(url, init);
+      if (response.ok) {
+        return response;
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error: any) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.warn(`[FIDE API] Attempt ${attempt} failed: ${errorMsg}`);
+      if (attempt > retries) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error("Failed to fetch from FIDE");
+}
+
 // Scrape Top 100 players list
 export async function scrapeTopList(listType: string): Promise<TopListPlayer[]> {
   const url = `https://ratings.fide.com/a_top.php?list=${listType}`
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     headers: COMMON_HEADERS,
   })
 
@@ -125,7 +150,7 @@ export async function scrapeTopList(listType: string): Promise<TopListPlayer[]> 
 // Scrape Player Profile
 export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
-  const response = await fetch(profileUrl, {
+  const response = await fetchWithRetry(profileUrl, {
     headers: COMMON_HEADERS,
   })
 
@@ -223,7 +248,7 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
 export async function scrapePlayerHistory(fideId: number): Promise<PlayerChartItem[]> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
   try {
-    const chartResponse = await fetch(`https://ratings.fide.com/a_chart_data.phtml?event=${fideId}&period=0`, {
+    const chartResponse = await fetchWithRetry(`https://ratings.fide.com/a_chart_data.phtml?event=${fideId}&period=0`, {
       method: 'POST',
       headers: {
         ...COMMON_HEADERS,
@@ -256,7 +281,7 @@ export async function scrapePlayerHistory(fideId: number): Promise<PlayerChartIt
 export async function scrapePlayerStats(fideId: number): Promise<PlayerStatsData | null> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
   try {
-    const statsResponse = await fetch(`https://ratings.fide.com/a_data_stats.php?id1=${fideId}&id2=0`, {
+    const statsResponse = await fetchWithRetry(`https://ratings.fide.com/a_data_stats.php?id1=${fideId}&id2=0`, {
       method: 'POST',
       headers: {
         ...COMMON_HEADERS,

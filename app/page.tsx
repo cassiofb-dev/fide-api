@@ -17,11 +17,13 @@ export default function Home() {
   const [players, setPlayers] = useState<ListPlayer[]>([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
+  const [listAttempt, setListAttempt] = useState(1)
 
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
   const [playerDetail, setPlayerDetail] = useState<PlayerDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const [detailAttempt, setDetailAttempt] = useState(1)
 
   const [syncPrompt, setSyncPrompt] = useState<{
     title: string
@@ -38,21 +40,32 @@ export default function Home() {
 
     setListLoading(true)
     setListError(null)
-    try {
-      const res = await fetch(`/api/list?list=${listName}${force ? "&forceUpdate=true" : ""}${passwordParam}`)
-      const data = (await res.json()) as any
-      if (data.error) throw new Error(data.error)
-      setPlayers(data.data || [])
-      
-      // Auto select first player if none is selected
-      if (data.data && data.data.length > 0 && !selectedPlayerId) {
-        setSelectedPlayerId(data.data[0].fideId)
+
+    let attempt = 1
+    const maxAttempts = 4
+    while (attempt <= maxAttempts) {
+      setListAttempt(attempt)
+      try {
+        const res = await fetch(`/api/list?list=${listName}${force ? "&forceUpdate=true" : ""}${passwordParam}`)
+        const data = (await res.json()) as any
+        if (data.error) throw new Error(data.error)
+        setPlayers(data.data || [])
+        
+        // Auto select first player if none is selected
+        if (data.data && data.data.length > 0 && !selectedPlayerId) {
+          setSelectedPlayerId(data.data[0].fideId)
+        }
+        break
+      } catch (err: any) {
+        if (attempt >= maxAttempts) {
+          setListError(err.message || "Failed to fetch list")
+          break
+        }
+        attempt++
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
-    } catch (err: any) {
-      setListError(err.message || "Failed to fetch list")
-    } finally {
-      setListLoading(false)
     }
+    setListLoading(false)
   }
 
   // Load player details
@@ -64,18 +77,29 @@ export default function Home() {
 
     setDetailLoading(true)
     setDetailError(null)
-    try {
-      const res = await fetch(`/api/profile?id=${fideId}${force ? "&forceUpdate=true" : ""}${passwordParam}`)
-      const data = (await res.json()) as any
-      if (data.error) throw new Error(data.error)
-      
-      const p = data.data
-      setPlayerDetail(p)
-    } catch (err: any) {
-      setDetailError(err.message || "Failed to fetch player profile")
-    } finally {
-      setDetailLoading(false)
+
+    let attempt = 1
+    const maxAttempts = 4
+    while (attempt <= maxAttempts) {
+      setDetailAttempt(attempt)
+      try {
+        const res = await fetch(`/api/profile?id=${fideId}${force ? "&forceUpdate=true" : ""}${passwordParam}`)
+        const data = (await res.json()) as any
+        if (data.error) throw new Error(data.error)
+        
+        const p = data.data
+        setPlayerDetail(p)
+        break
+      } catch (err: any) {
+        if (attempt >= maxAttempts) {
+          setDetailError(err.message || "Failed to fetch player profile")
+          break
+        }
+        attempt++
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
     }
+    setDetailLoading(false)
   }
 
   const handleForceSyncList = () => {
@@ -144,6 +168,7 @@ export default function Home() {
             selectedPlayerId={selectedPlayerId}
             setSelectedPlayerId={setSelectedPlayerId}
             mounted={mounted}
+            attempt={listAttempt}
           />
         </div>
 
@@ -164,6 +189,7 @@ export default function Home() {
             onForceSync={handleForceSyncPlayer}
             mounted={mounted}
             showLinkToDetails={true}
+            attempt={detailAttempt}
           />
         </div>
 
