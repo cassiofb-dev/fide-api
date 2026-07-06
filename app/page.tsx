@@ -6,6 +6,7 @@ import { RankingList, ListPlayer } from "@/components/RankingList"
 import { PlayerProfileCard, PlayerDetail } from "@/components/PlayerProfileCard"
 import { ListType } from "@/lib/enums"
 import { SyncPasswordDialog } from "@/components/SyncPasswordDialog"
+import { ERROR_MESSAGES } from "@/lib/errors"
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
@@ -58,7 +59,11 @@ export default function Home() {
         break
       } catch (err: any) {
         if (attempt >= maxAttempts) {
-          setListError(err.message || "Failed to fetch list")
+          let friendlyMsg = err.message
+          if (err.message === "FIDE_CONNECTION_ERROR") {
+            friendlyMsg = ERROR_MESSAGES.UI_FIDE_CONNECTION_ERROR
+          }
+          setListError(friendlyMsg || "Failed to fetch list")
           break
         }
         attempt++
@@ -92,7 +97,13 @@ export default function Home() {
         break
       } catch (err: any) {
         if (attempt >= maxAttempts) {
-          setDetailError(err.message || "Failed to fetch player profile")
+          let friendlyMsg = err.message
+          if (err.message === "FIDE_CONNECTION_ERROR") {
+            friendlyMsg = ERROR_MESSAGES.UI_FIDE_CONNECTION_ERROR
+          } else if (err.message === "PLAYER_NOT_FOUND") {
+            friendlyMsg = ERROR_MESSAGES.UI_PLAYER_NOT_FOUND
+          }
+          setDetailError(friendlyMsg || "Failed to fetch player profile")
           break
         }
         attempt++

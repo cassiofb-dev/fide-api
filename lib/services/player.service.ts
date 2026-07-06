@@ -2,6 +2,7 @@ import { playerRepository } from '../repositories/player.repository';
 import { scrapePlayerProfile, scrapePlayerHistory, scrapePlayerStats } from '../scraper';
 import { parseAndValidateFideId, verifySyncThrottle } from '../auth';
 import { DataSource, ResourceType } from '../enums';
+import { ERROR_MESSAGES } from '../errors';
 
 export class PlayerService {
   async getPlayerProfile(idStr: string | null, forceUpdate: boolean, full: boolean, request: Request) {
@@ -47,7 +48,7 @@ export class PlayerService {
       const savedPlayer = await playerRepository.findByIdWithRelations(fideId);
 
       if (!savedPlayer) {
-        throw new Error('Failed to retrieve player after saving');
+        throw new Error(ERROR_MESSAGES.SAVE_PLAYER_FAILED);
       }
 
       return {
@@ -72,7 +73,7 @@ export class PlayerService {
       const savedPlayer = await playerRepository.findById(fideId);
 
       if (!savedPlayer) {
-        throw new Error('Failed to retrieve player after saving');
+        throw new Error(ERROR_MESSAGES.SAVE_PLAYER_FAILED);
       }
 
       return {

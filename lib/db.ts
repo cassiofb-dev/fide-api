@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import * as schema from './schema';
+import { ERROR_MESSAGES } from './errors';
 
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
@@ -27,10 +28,7 @@ function getDb() {
   }
 
   if (!d1) {
-    throw new Error(
-      "D1 Database binding ('fide-db') is not available in the Cloudflare context or process.env. " +
-      "Make sure you have configured the D1 binding correctly in wrangler.jsonc."
-    );
+    throw new Error(ERROR_MESSAGES.DB_BINDING_MISSING);
   }
 
   dbInstance = drizzle(d1, { schema });

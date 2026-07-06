@@ -8,6 +8,7 @@ import { PlayerProfileCard, PlayerDetail } from "@/components/PlayerProfileCard"
 import { HistoryChart, PlayerChart } from "@/components/HistoryChart"
 import { StatsCard, PlayerStats } from "@/components/StatsCard"
 import { SyncPasswordDialog } from "@/components/SyncPasswordDialog"
+import { ERROR_MESSAGES } from "@/lib/errors"
 
 export default function PlayerPage() {
   const params = useParams()
@@ -74,7 +75,13 @@ export default function PlayerPage() {
         break
       } catch (err: any) {
         if (attempt >= maxAttempts) {
-          setDetailError(err.message || "Failed to fetch player profile")
+          let friendlyMsg = err.message
+          if (err.message === "FIDE_CONNECTION_ERROR") {
+            friendlyMsg = ERROR_MESSAGES.UI_FIDE_CONNECTION_ERROR
+          } else if (err.message === "PLAYER_NOT_FOUND") {
+            friendlyMsg = ERROR_MESSAGES.UI_PLAYER_NOT_FOUND
+          }
+          setDetailError(friendlyMsg || "Failed to fetch player profile")
           setHistoryStatus("error")
           setStatsStatus("error")
           break

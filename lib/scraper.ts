@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import { FideConnectionError, PlayerNotFoundError, ERROR_MESSAGES } from './errors'
 
 export interface TopListPlayer {
   rank: number
@@ -83,17 +84,20 @@ async function fetchWithRetry(url: string, init?: RequestInit, retries = 0, dela
       if (response.ok) {
         return response;
       }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new FideConnectionError(`HTTP ${response.status}: ${response.statusText}`);
     } catch (error: any) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.warn(`[FIDE API] Attempt ${attempt} failed: ${errorMsg}`);
       if (attempt > retries) {
-        throw error;
+        if (error instanceof FideConnectionError) {
+          throw error;
+        }
+        throw new FideConnectionError(errorMsg);
       }
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
-  throw new Error("Failed to fetch from FIDE");
+  throw new FideConnectionError(ERROR_MESSAGES.FIDE_CONNECTION_GENERIC);
 }
 
 // Scrape Top 100 players list
@@ -104,7 +108,7 @@ export async function scrapeTopList(listType: string): Promise<TopListPlayer[]> 
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch top list from FIDE: ${response.statusText}`)
+    throw new FideConnectionError(ERROR_MESSAGES.FIDE_TOP_LIST_FAILED(response.statusText))
   }
 
   const html = await response.text()
@@ -155,16 +159,15 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch player profile from FIDE: ${response.statusText}`)
+    throw new FideConnectionError(ERROR_MESSAGES.FIDE_PROFILE_FAILED(response.statusText))
   }
 
   const html = await response.text()
   const $ = cheerio.load(html)
 
-  // Parse Name
   const name = $('h1.player-title').text().trim()
   if (!name) {
-    throw new Error(`Player with ID ${fideId} not found on FIDE.`)
+    throw new PlayerNotFoundError(ERROR_MESSAGES.PLAYER_NOT_FOUND(fideId))
   }
 
   // Parse Federation, B-Year, Gender, Title
@@ -247,86 +250,86 @@ export async function scrapePlayerProfile(fideId: number): Promise<PlayerProfile
 // Scrape Player Rating History
 export async function scrapePlayerHistory(fideId: number): Promise<PlayerChartItem[]> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
-  try {
-    const chartResponse = await fetchWithRetry(`https://ratings.fide.com/a_chart_data.phtml?event=${fideId}&period=0`, {
-      method: 'POST',
-      headers: {
-        ...COMMON_HEADERS,
-        'X-Requested-With': 'XMLHttpRequest',
-        'Origin': 'https://ratings.fide.com',
-        'Referer': profileUrl,
-      },
-    })
-    if (chartResponse.ok) {
-      const chartJson = await chartResponse.json()
-      if (Array.isArray(chartJson)) {
-        return chartJson.map((item: any) => ({
-          period: item.date_2 || '',
-          rating: item.rating ? parseInt(item.rating, 10) : null,
-          games: item.period_games ? parseInt(item.period_games, 10) : null,
-          rapidRating: item.rapid_rtng ? parseInt(item.rapid_rtng, 10) : null,
-          rapidGames: item.rapid_games ? parseInt(item.rapid_games, 10) : null,
-          blitzRating: item.blitz_rtng ? parseInt(item.blitz_rtng, 10) : null,
-          blitzGames: item.blitz_games ? parseInt(item.blitz_games, 10) : null,
-        })).filter(c => c.period)
-      }
-    }
-  } catch (err) {
-    console.error('Failed to fetch chart data:', err)
+  const chartResponse = await fetchWithRetry(`https://ratings.fide.com/a_chart_data.phtml?event=${fideId}&period=0`, {
+    method: 'POST',
+    headers: {
+      ...COMMON_HEADERS,
+      'X-Requested-With': 'XMLHttpRequest',
+      'Origin': 'https://ratings.fide.com',
+      'Referer': profileUrl,
+    },
+  })
+
+  if (!chartResponse.ok) {
+    throw new FideConnectionError(ERROR_MESSAGES.FIDE_HISTORY_FAILED(chartResponse.statusText));
   }
-  return []
+
+  const chartJson = await chartResponse.json();
+  if (!Array.isArray(chartJson)) {
+    throw new FideConnectionError(ERROR_MESSAGES.FIDE_HISTORY_INVALID);
+  }
+
+  return chartJson.map((item: any) => ({
+    period: item.date_2 || '',
+    rating: item.rating ? parseInt(item.rating, 10) : null,
+    games: item.period_games ? parseInt(item.period_games, 10) : null,
+    rapidRating: item.rapid_rtng ? parseInt(item.rapid_rtng, 10) : null,
+    rapidGames: item.rapid_games ? parseInt(item.rapid_games, 10) : null,
+    blitzRating: item.blitz_rtng ? parseInt(item.blitz_rtng, 10) : null,
+    blitzGames: item.blitz_games ? parseInt(item.blitz_games, 10) : null,
+  })).filter(c => c.period);
 }
 
 // Scrape Player Stats
 export async function scrapePlayerStats(fideId: number): Promise<PlayerStatsData | null> {
   const profileUrl = `https://ratings.fide.com/profile/${fideId}`
-  try {
-    const statsResponse = await fetchWithRetry(`https://ratings.fide.com/a_data_stats.php?id1=${fideId}&id2=0`, {
-      method: 'POST',
-      headers: {
-        ...COMMON_HEADERS,
-        'X-Requested-With': 'XMLHttpRequest',
-        'Origin': 'https://ratings.fide.com',
-        'Referer': profileUrl,
-      },
-    })
-    if (statsResponse.ok) {
-      const statsJson = await statsResponse.json()
-      if (Array.isArray(statsJson) && statsJson.length > 0) {
-        const item = statsJson[0]
-        return {
-          whiteTotal: parseInt(item.white_total, 10) || 0,
-          whiteWinNum: parseInt(item.white_win_num, 10) || 0,
-          whiteDrawNum: parseInt(item.white_draw_num, 10) || 0,
-          blackTotal: parseInt(item.black_total, 10) || 0,
-          blackWinNum: parseInt(item.black_win_num, 10) || 0,
-          blackDrawNum: parseInt(item.black_draw_num, 10) || 0,
+  const statsResponse = await fetchWithRetry(`https://ratings.fide.com/a_data_stats.php?id1=${fideId}&id2=0`, {
+    method: 'POST',
+    headers: {
+      ...COMMON_HEADERS,
+      'X-Requested-With': 'XMLHttpRequest',
+      'Origin': 'https://ratings.fide.com',
+      'Referer': profileUrl,
+    },
+  })
 
-          whiteTotalStd: parseInt(item.white_total_std, 10) || 0,
-          whiteWinNumStd: parseInt(item.white_win_num_std, 10) || 0,
-          whiteDrawNumStd: parseInt(item.white_draw_num_std, 10) || 0,
-          blackTotalStd: parseInt(item.black_total_std, 10) || 0,
-          blackWinNumStd: parseInt(item.black_win_num_std, 10) || 0,
-          blackDrawNumStd: parseInt(item.black_draw_num_std, 10) || 0,
-
-          whiteTotalRpd: parseInt(item.white_total_rpd, 10) || 0,
-          whiteWinNumRpd: parseInt(item.white_win_num_rpd, 10) || 0,
-          whiteDrawNumRpd: parseInt(item.white_draw_num_rpd, 10) || 0,
-          blackTotalRpd: parseInt(item.black_total_rpd, 10) || 0,
-          blackWinNumRpd: parseInt(item.black_win_num_rpd, 10) || 0,
-          blackDrawNumRpd: parseInt(item.black_draw_num_rpd, 10) || 0,
-
-          whiteTotalBlz: parseInt(item.white_total_blz, 10) || 0,
-          whiteWinNumBlz: parseInt(item.white_win_num_blz, 10) || 0,
-          whiteDrawNumBlz: parseInt(item.white_draw_num_blz, 10) || 0,
-          blackTotalBlz: parseInt(item.black_total_blz, 10) || 0,
-          blackWinNumBlz: parseInt(item.black_win_num_blz, 10) || 0,
-          blackDrawNumBlz: parseInt(item.black_draw_num_blz, 10) || 0,
-        }
-      }
-    }
-  } catch (err) {
-    console.error('Failed to fetch stats data:', err)
+  if (!statsResponse.ok) {
+    throw new FideConnectionError(ERROR_MESSAGES.FIDE_STATS_FAILED(statsResponse.statusText));
   }
-  return null
+
+  const statsJson = await statsResponse.json();
+  if (!Array.isArray(statsJson) || statsJson.length === 0) {
+    throw new FideConnectionError(ERROR_MESSAGES.FIDE_STATS_INVALID);
+  }
+
+  const item = statsJson[0];
+  return {
+    whiteTotal: parseInt(item.white_total, 10) || 0,
+    whiteWinNum: parseInt(item.white_win_num, 10) || 0,
+    whiteDrawNum: parseInt(item.white_draw_num, 10) || 0,
+    blackTotal: parseInt(item.black_total, 10) || 0,
+    blackWinNum: parseInt(item.black_win_num, 10) || 0,
+    blackDrawNum: parseInt(item.black_draw_num, 10) || 0,
+
+    whiteTotalStd: parseInt(item.white_total_std, 10) || 0,
+    whiteWinNumStd: parseInt(item.white_win_num_std, 10) || 0,
+    whiteDrawNumStd: parseInt(item.white_draw_num_std, 10) || 0,
+    blackTotalStd: parseInt(item.black_total_std, 10) || 0,
+    blackWinNumStd: parseInt(item.black_win_num_std, 10) || 0,
+    blackDrawNumStd: parseInt(item.black_draw_num_std, 10) || 0,
+
+    whiteTotalRpd: parseInt(item.white_total_rpd, 10) || 0,
+    whiteWinNumRpd: parseInt(item.white_win_num_rpd, 10) || 0,
+    whiteDrawNumRpd: parseInt(item.white_draw_num_rpd, 10) || 0,
+    blackTotalRpd: parseInt(item.black_total_rpd, 10) || 0,
+    blackWinNumRpd: parseInt(item.black_win_num_rpd, 10) || 0,
+    blackDrawNumRpd: parseInt(item.black_draw_num_rpd, 10) || 0,
+
+    whiteTotalBlz: parseInt(item.white_total_blz, 10) || 0,
+    whiteWinNumBlz: parseInt(item.white_win_num_blz, 10) || 0,
+    whiteDrawNumBlz: parseInt(item.white_draw_num_blz, 10) || 0,
+    blackTotalBlz: parseInt(item.black_total_blz, 10) || 0,
+    blackWinNumBlz: parseInt(item.black_win_num_blz, 10) || 0,
+    blackDrawNumBlz: parseInt(item.black_draw_num_blz, 10) || 0,
+  };
 }

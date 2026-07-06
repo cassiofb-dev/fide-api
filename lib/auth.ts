@@ -47,17 +47,17 @@ export function verifySyncPassword(request: Request): boolean {
   return false;
 }
 
-import { ValidationError, SyncThrottleError } from './errors';
+import { ValidationError, SyncThrottleError, ERROR_MESSAGES } from './errors';
 import { ResourceType } from './enums';
 
 export function parseAndValidateFideId(idStr: string | null): number {
   if (!idStr) {
-    throw new ValidationError('Missing player FIDE ID');
+    throw new ValidationError(ERROR_MESSAGES.MISSING_FIDE_ID);
   }
 
   const fideId = parseInt(idStr, 10);
   if (isNaN(fideId)) {
-    throw new ValidationError('Invalid player FIDE ID');
+    throw new ValidationError(ERROR_MESSAGES.INVALID_FIDE_ID);
   }
 
   return fideId;
@@ -68,9 +68,7 @@ export function verifySyncThrottle(updatedAtStr: string, request: Request, resou
   const isRecent = Date.now() - lastUpdated < 10 * 60 * 1000;
   if (isRecent && !verifySyncPassword(request)) {
     const displayResourceName = resourceName === ResourceType.STATS ? 'these stats' : `this ${resourceName}`;
-    throw new SyncThrottleError(
-      `Syncing ${displayResourceName} again within 10 minutes requires a valid sync password.`
-    );
+    throw new SyncThrottleError(ERROR_MESSAGES.SYNC_THROTTLE(displayResourceName));
   }
 }
 
