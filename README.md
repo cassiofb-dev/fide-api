@@ -2,6 +2,8 @@
 
 A modern Next.js application designed to scrape and display top chess players' ratings and profile details from the official FIDE website, using Cloudflare Pages, Cloudflare D1 (SQLite), and Drizzle ORM.
 
+[![Support on Ko-fi](https://img.shields.io/badge/Support%20on%20Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/cassiofernando)
+
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router)
 - **Deployment & Hosting**: Cloudflare Pages
@@ -143,3 +145,11 @@ All endpoints support database cache hits. If `forceUpdate=true` is provided, th
 2. **Get Player Profile (Consolidated)**: `/api/profile?id={fideId}&forceUpdate=false`
 3. **Get Player Rating History (Legacy)**: `/api/profile/history?id={fideId}&forceUpdate=false`
 4. **Get Player Game Statistics (Legacy)**: `/api/profile/stats?id={fideId}&forceUpdate=false`
+
+---
+
+## Support
+
+If you find this project useful, please consider supporting it by buying me a coffee!
+
+[![Support on Ko-fi](https://img.shields.io/badge/Support%20on%20Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/cassiofernando)
