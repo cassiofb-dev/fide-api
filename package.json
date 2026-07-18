@@ -10,7 +10,8 @@
 		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
 		"upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
 		"preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-		"cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts"
+		"cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.6.0",
@@ -31,10 +32,13 @@
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",
+		"@libsql/client": "^0.17.4",
 		"@tailwindcss/postcss": "^4",
+		"@types/better-sqlite3": "^7.6.13",
 		"@types/node": "^26.1.0",
 		"@types/react": "^19.1.7",
 		"@types/react-dom": "^19.1.7",
+		"better-sqlite3": "^12.11.1",
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^9.21.0",
 		"eslint-config-next": "16.2.10",

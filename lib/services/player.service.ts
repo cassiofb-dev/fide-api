@@ -3,6 +3,7 @@ import { scrapePlayerProfile, scrapePlayerHistory, scrapePlayerStats } from '../
 import { parseAndValidateFideId, verifySyncThrottle } from '../auth';
 import { DataSource, ResourceType } from '../enums';
 import { ERROR_MESSAGES } from '../errors';
+import { isEmpty } from '../utils';
 
 export class PlayerService {
   async getPlayerProfile(idStr: string | null, forceUpdate: boolean, full: boolean, request: Request, retries?: number) {
@@ -32,11 +33,54 @@ export class PlayerService {
 
     if (full) {
       // 2. Scrape details in parallel
-      const [profile, history, stats] = await Promise.all([
+      const [profileResult, historyResult, statsResult] = await Promise.allSettled([
         scrapePlayerProfile(fideId, retries),
         scrapePlayerHistory(fideId, retries),
         scrapePlayerStats(fideId, retries),
       ]);
+
+      if (profileResult.status === 'rejected') {
+        if (player) {
+          return {
+            source: DataSource.CACHE,
+            data: {
+              ...player,
+              charts: (player as any).chart ? JSON.parse((player as any).chart.data) : [],
+              stats: (player as any).stats || null,
+            },
+          };
+        }
+        throw profileResult.reason;
+      }
+
+      const profile = profileResult.value;
+
+      if (isEmpty(profile) && player) {
+        return {
+          source: DataSource.CACHE,
+          data: {
+            ...player,
+            charts: (player as any).chart ? JSON.parse((player as any).chart.data) : [],
+            stats: (player as any).stats || null,
+          },
+        };
+      }
+
+      let history = historyResult.status === 'fulfilled' ? historyResult.value : [];
+      let stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+
+      // Check registered chart data to prevent deleting registered history
+      const existingChartData = player && (player as any).chart ? JSON.parse((player as any).chart.data) : null;
+      if (isEmpty(history) && !isEmpty(existingChartData)) {
+        history = existingChartData;
+      }
+
+      // Check registered stats data to prevent deleting registered stats
+      const existingStatsData = player && (player as any).stats ? (player as any).stats : null;
+      if (isEmpty(stats) && !isEmpty(existingStatsData)) {
+        const { playerId, updatedAt, ...cleanStats } = existingStatsData;
+        stats = cleanStats;
+      }
 
       const now = new Date().toISOString();
       const { charts: _, stats: __, ...profileData } = profile;
@@ -61,7 +105,26 @@ export class PlayerService {
       };
     } else {
       // Scrape ONLY profile
-      const profile = await scrapePlayerProfile(fideId, retries);
+      let profile: any = null;
+      try {
+        profile = await scrapePlayerProfile(fideId, retries);
+      } catch (error) {
+        if (player) {
+          return {
+            source: DataSource.CACHE,
+            data: player,
+          };
+        }
+        throw error;
+      }
+
+      if (isEmpty(profile) && player) {
+        return {
+          source: DataSource.CACHE,
+          data: player,
+        };
+      }
+
       const now = new Date().toISOString();
       const { charts: _, stats: __, ...profileData } = profile;
 
@@ -114,7 +177,27 @@ export class PlayerService {
     }
 
     // 3. Scrape player history
-    const history = await scrapePlayerHistory(fideId, retries);
+    let history: any = [];
+    try {
+      history = await scrapePlayerHistory(fideId, retries);
+    } catch (error) {
+      if (chart) {
+        return {
+          source: DataSource.CACHE,
+          data: JSON.parse(chart.data),
+          updatedAt: chart.updatedAt,
+        };
+      }
+      throw error;
+    }
+
+    if (isEmpty(history) && chart) {
+      return {
+        source: DataSource.CACHE,
+        data: JSON.parse(chart.data),
+        updatedAt: chart.updatedAt,
+      };
+    }
 
     // 4. Save to database
     const now = new Date().toISOString();
@@ -158,10 +241,21 @@ export class PlayerService {
     }
 
     // 3. Scrape player stats
-    const stats = await scrapePlayerStats(fideId, retries);
+    let stats: any = null;
+    try {
+      stats = await scrapePlayerStats(fideId, retries);
+    } catch (error) {
+      if (cachedStats) {
+        return {
+          source: DataSource.CACHE,
+          data: cachedStats,
+          updatedAt: cachedStats.updatedAt,
+        };
+      }
+    }
 
     // 4. Save to database
-    if (stats) {
+    if (!isEmpty(stats)) {
       const now = new Date().toISOString();
       const savedStats = await playerRepository.upsertStats(fideId, stats, now);
 
@@ -171,6 +265,13 @@ export class PlayerService {
         updatedAt: savedStats.updatedAt,
       };
     } else {
+      if (cachedStats) {
+        return {
+          source: DataSource.CACHE,
+          data: cachedStats,
+          updatedAt: cachedStats.updatedAt,
+        };
+      }
       await playerRepository.deleteStats(fideId);
       return {
         source: DataSource.SCRAPE,

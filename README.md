@@ -95,6 +95,13 @@ To create database schema migrations:
    pnpm exec wrangler d1 migrations apply fide-db --local
    ```
 
+### Database GUI (Drizzle Studio)
+To visually inspect and interact with your local D1 database tables via Drizzle Studio:
+```bash
+pnpm db:studio
+```
+This launches Drizzle Studio web interface (accessible at `https://local.drizzle.studio`).
+
 ---
 
 ## Preview & Deployment

@@ -2,6 +2,7 @@ import { topListRepository } from '../repositories/top-list.repository';
 import { scrapeTopList } from '../scraper';
 import { verifySyncThrottle } from '../auth';
 import { ListType, DataSource, ResourceType } from '../enums';
+import { isEmpty } from '../utils';
 
 export class TopListService {
   async getTopList(listTypeStr: string | null, forceUpdate: boolean, request: Request, retries?: number) {
@@ -23,7 +24,27 @@ export class TopListService {
     }
 
     // 2. Scrape from FIDE
-    const players = await scrapeTopList(listType, retries);
+    let players: any = [];
+    try {
+      players = await scrapeTopList(listType, retries);
+    } catch (error) {
+      if (cached) {
+        return {
+          source: DataSource.CACHE,
+          data: JSON.parse(cached.data),
+          updatedAt: cached.updatedAt,
+        };
+      }
+      throw error;
+    }
+
+    if (isEmpty(players) && cached) {
+      return {
+        source: DataSource.CACHE,
+        data: JSON.parse(cached.data),
+        updatedAt: cached.updatedAt,
+      };
+    }
 
     // 3. Save to database
     const now = new Date().toISOString();
